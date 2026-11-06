@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "r1-visual-action-decider"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["pydantic>=2.10,<3", "httpx>=0.28,<1", "pillow>=11,<13", "numpy>=2,<3"]
+
+[project.scripts]
+jev-mvp = "visual_action_decider.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["visual_action_decider*"]

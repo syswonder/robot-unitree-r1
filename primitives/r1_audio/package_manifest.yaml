@@ -1,0 +1,19 @@
+manifestVersion: 1
+
+package:
+  name: robonix.primitive.unitree.r1_audio
+  version: 0.1.0
+  description: R1 头部麦克风组播采集和 Unitree voice PCM 播放。
+  tags: [primitive, unitree, r1, audio, mic, speaker]
+  maintainers:
+    - 张振宇 <768726812@qq.com>
+  license: Apache-2.0 AND BSD-3-Clause
+
+build: bash scripts/build.sh
+start: bash scripts/start.sh
+
+capabilities:
+  - name: robonix/primitive/audio/mic
+  - name: robonix/primitive/audio/speaker
+
+depends: []

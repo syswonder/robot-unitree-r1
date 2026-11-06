@@ -1,0 +1,8 @@
+[contract]
+id = "robonix/service/visual_action/status"
+version = "1"
+kind = "service"
+idl = "visual_action/srv/Status.srv"
+description = "查询一次视觉动作任务的状态、决策、执行反馈和停止确认。"
+[mode]
+type = "rpc"

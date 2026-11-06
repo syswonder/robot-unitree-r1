@@ -1,0 +1,9 @@
+[contract]
+id = "robonix/primitive/arm/move_joints"
+version = "1"
+kind = "primitive"
+idl = "r1_arm/srv/MoveJoints.srv"
+description = "在 FSM 811 下同步移动多个具名机械臂关节，可在同一次调用中控制左右双臂。joint_names、target_rad、speed_rad_s 为等长数组，分别表示 URDF 名称、绝对目标角度和速度上限，单位 rad、rad/s。全部关节共用起止时间及控制会话，返回逐关节实测位置、误差与实际变化。"
+
+[mode]
+type = "rpc"

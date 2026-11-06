@@ -1,0 +1,5 @@
+# Read-only R1 state snapshot. The provider owns one robot, so the
+# request is empty. The response is a JSON object; using one string keeps
+# the IDL stable while the vendor state fields evolve.
+---
+string json

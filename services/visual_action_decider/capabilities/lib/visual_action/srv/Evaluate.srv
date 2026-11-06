@@ -1,0 +1,12 @@
+string request_id
+string pipeline
+string instruction
+string sample_path
+string scene_id
+---
+string decision_id
+string selected_action
+string[] action_ids
+float64[] probabilities
+float64 total_ms
+string result_json

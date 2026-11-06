@@ -1,0 +1,11 @@
+rbnx-build/
+rbnx-boot/
+.tools/
+.work/
+.cyclonedds-prefix/
+logs/
+__pycache__/
+*.pyc
+*.log
+.venv/
+*.egg-info/

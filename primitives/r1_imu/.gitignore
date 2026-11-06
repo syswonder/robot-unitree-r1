@@ -1,0 +1,5 @@
+.venv/
+.cyclonedds-prefix/
+rbnx-build/
+__pycache__/
+*.pyc

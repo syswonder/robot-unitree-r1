@@ -1,0 +1,9 @@
+[contract]
+id = "robonix/primitive/arm/get_joint_states"
+version = "1"
+kind = "primitive"
+idl = "r1_arm/srv/GetJointStates.srv"
+description = "读取 R1 双臂十个关节的当前绝对角度、URDF 限位和速度限制，供运动前确定目标。只读调用，不发送运动指令。"
+
+[mode]
+type = "rpc"

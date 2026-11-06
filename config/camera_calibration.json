@@ -1,0 +1,25 @@
+{
+  "camera": {
+    "width": 544,
+    "height": 448,
+    "fx": 213.5,
+    "fy": 213.5,
+    "cx": 272.0,
+    "cy": 224.0,
+    "distortion": [0.0, 0.0, 0.0, 0.0, 0.0],
+    "baseline_m": 0.060,
+    "source": "FOV approximation (146 deg H / 124 deg V, equidistant local scale); replace with Unitree cam_param.txt when 192.168.123.161:9080 is available"
+  },
+  "extrinsics": {
+    "parent": "base_link",
+    "child": "r1_front_camera",
+    "apply": true,
+    "translation_xyz": [0.0, 0.0, 0.0],
+    "rotation_quat_xyzw": [0.0, 0.0, 0.0, 1.0],
+    "floor_height_m": 1.2,
+    "floor_mode": "auto",
+    "floor_min_m": 0.5,
+    "floor_max_m": 2.0,
+    "status": "placeholder identity; floor_height_m is the approximate camera height used when the white floor has no stereo depth; set the measured base_link -> camera transform and floor height, then restart the map service"
+  }
+}

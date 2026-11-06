@@ -1,0 +1,9 @@
+[contract]
+id      = "robonix/primitive/r1/get_state"
+version = "1"
+kind    = "primitive"
+idl     = "r1_state/srv/GetState.srv"
+description = "Return the R1 FSM, IMU, BMS and motor state as a JSON snapshot."
+
+[mode]
+type = "rpc"

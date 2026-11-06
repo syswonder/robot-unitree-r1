@@ -1,0 +1,25 @@
+# R1-native first boot: Atlas + Soma + the read-only r1_state provider.
+# The provider uses eth10 on the R1 onboard computer. No Pilot/Liaison/Executor
+# or VLM endpoint is needed for this step.
+manifestVersion: 1
+name: r1-native-state
+
+system:
+  atlas:
+    listen: 127.0.0.1:50051
+    log: info
+  soma:
+    listen: 127.0.0.1:50091
+    provider_id: soma
+    robot_yaml: soma.yaml
+    log: info
+
+primitive:
+  - name: r1_state
+    path: ./primitives/r1_state
+    config:
+      network_interface: eth10
+      stale_after_s: 2.0
+
+service: []
+skill: []

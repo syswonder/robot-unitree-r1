@@ -1,0 +1,9 @@
+[contract]
+id = "robonix/primitive/arm/move_joint"
+version = "1"
+kind = "primitive"
+idl = "r1_arm/srv/MoveJoint.srv"
+description = "在官方走跑运控模式 811 下，移动一个双臂关节到指定绝对角度。单位 rad，速度单位 rad/s；角度和速度遵循官方 URDF 限制。完成后释放控制权，结果提供实测角度与实际变化。"
+
+[mode]
+type = "rpc"

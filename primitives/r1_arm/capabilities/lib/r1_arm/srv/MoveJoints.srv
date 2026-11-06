@@ -1,0 +1,5 @@
+string[] joint_names
+float64[] target_rad
+float64[] speed_rad_s
+---
+string json

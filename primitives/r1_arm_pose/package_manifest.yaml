@@ -1,0 +1,18 @@
+manifestVersion: 1
+package:
+  name: robonix.primitive.unitree.r1_arm_pose
+  version: 0.1.0
+  description: R1 左臂或右臂标准腕部位姿反馈和逆运动学指令。
+  tags: [primitive, unitree, r1, arm]
+  maintainers:
+    - 张振宇 <768726812@qq.com>
+  license: Apache-2.0 AND BSD-3-Clause
+build: bash scripts/build.sh
+start: bash scripts/start.sh
+capabilities:
+  - name: robonix/primitive/arm/end_pose
+  - name: robonix/primitive/arm/pos_command
+  - name: robonix/primitive/arm/get_end_pose
+  - name: robonix/primitive/arm/move_pose
+  - name: robonix/lifecycle/driver
+depends: []

@@ -1,0 +1,56 @@
+# 工作站只读配置：状态、健康和相机走 enp131s0。不是软件包目录索引的清单。
+manifestVersion: 1
+name: r1-pc-readonly
+
+env:
+  LOG: "INFO"
+  RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+
+system:
+  atlas:
+    listen: 127.0.0.1:50051
+    log: info
+  executor:
+    listen: 127.0.0.1:50061
+    log: info
+  pilot:
+    listen: 127.0.0.1:50071
+    log: info
+    vlm:
+      upstream: ${VLM_BASE_URL}
+      api_key: ${VLM_API_KEY}
+      model: ${VLM_MODEL}
+      api_format: openai
+  liaison:
+    listen: 127.0.0.1:50081
+    log: info
+  soma:
+    listen: 127.0.0.1:50091
+    provider_id: soma
+    robot_yaml: soma.yaml
+    log: info
+  vitals:
+    listen: 127.0.0.1:50093
+    log: info
+
+primitive:
+  - name: r1_state
+    path: ./primitives/r1_state
+    config:
+      network_interface: enp131s0
+      stale_after_s: 2.0
+  - name: r1_health
+    path: ./primitives/r1_health
+    config:
+      network_interface: enp131s0
+      interval_s: 0.5
+      stale_after_s: 2.0
+  - name: r1_camera
+    path: ./primitives/r1_camera
+    config:
+      network_interface: enp131s0
+      timeout_s: 3.0
+
+service: []
+
+skill: []

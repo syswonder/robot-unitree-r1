@@ -1,0 +1,8 @@
+[contract]
+id = "robonix/service/visual_action/cancel"
+version = "1"
+kind = "service"
+idl = "visual_action/srv/Cancel.srv"
+description = "取消指定 run_id，停止本服务持有的速度流并记录零速度请求及接口确认。"
+[mode]
+type = "rpc"

@@ -1,0 +1,67 @@
+manifestVersion: 1
+name: r1-native-sensors
+
+env:
+  LOG: INFO
+  RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+
+system:
+  atlas:
+    listen: 127.0.0.1:50051
+    log: info
+  soma:
+    listen: 127.0.0.1:50091
+    provider_id: soma
+    robot_yaml: soma.yaml
+    log: info
+  vitals:
+    listen: 127.0.0.1:50093
+    log: info
+    thresholds_path: ${ROBONIX_DEPLOY_DIR}/config/vitals_thresholds.yaml
+    expected_modules:
+      - module_id: vitals
+        provider_id: vitals
+        policy: required
+        ttl_ms: 0
+
+primitive:
+  - name: r1_state
+    path: ./primitives/r1_state
+    config:
+      network_interface: eth10
+      stale_after_s: 2.0
+  - name: r1_health
+    path: ./primitives/r1_health
+    config:
+      network_interface: eth10
+      interval_s: 0.5
+      stale_after_s: 2.0
+  - name: r1_camera
+    path: ./primitives/r1_camera
+    config:
+      source: stereo_udp
+      udp_port: 5001
+      rotate: clockwise
+      frame_id: r1_front_camera_optical_frame
+      stale_after_s: 2.0
+  - name: r1_depth
+    path: ./primitives/r1_depth
+    config:
+      device: /dev/video-dep
+      width: 544
+      height: 448
+      fps: 10.0
+      frame_id: r1_depth_camera_optical_frame
+      byte_order: big
+      stale_after_s: 2.0
+      min_depth_mm: 200.0
+      max_depth_mm: 10000.0
+  - name: r1_imu
+    path: ./primitives/r1_imu
+    config:
+      network_interface: eth10
+      frame_id: imu_in_pelvis_link
+      stale_after_s: 2.0
+
+service: []
+skill: []

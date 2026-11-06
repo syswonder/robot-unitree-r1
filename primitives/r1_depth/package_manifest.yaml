@@ -1,0 +1,22 @@
+manifestVersion: 1
+
+package:
+  name: robonix.primitive.unitree.r1_depth
+  version: 0.1.0
+  description: R1 双目度量深度标准数据流与快照接口。
+  tags: [primitive, unitree, r1, camera, depth, snapshot, read-only]
+  maintainers:
+    - 张振宇 <768726812@qq.com>
+  license: Apache-2.0 AND BSD-3-Clause
+
+build: bash scripts/build.sh
+start: bash scripts/start.sh
+
+capabilities:
+  - name: robonix/primitive/camera/depth
+  - name: robonix/primitive/camera/intrinsics
+  - name: robonix/primitive/camera/extrinsics
+  - name: robonix/primitive/camera/depth_snapshot
+  - name: robonix/lifecycle/driver
+
+depends: []

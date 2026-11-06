@@ -1,0 +1,8 @@
+[contract]
+id = "robonix/primitive/r1/get_state"
+version = "1"
+kind = "primitive"
+idl = "r1_state/srv/GetState.srv"
+description = "引用现有 R1 状态原语，读取 FSM、IMU、BMS 和关节反馈。"
+[mode]
+type = "rpc"

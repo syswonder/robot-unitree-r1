@@ -1,0 +1,26 @@
+# Minimal local test manifest: Atlas + Soma + the read-only R1 state provider.
+# It intentionally omits Pilot, Executor, Liaison and VLM configuration so the
+# URDF/state path can be verified without an LLM endpoint. The published
+# deployment is robonix_manifest.yaml.
+manifestVersion: 1
+name: r1-state-test
+
+system:
+  atlas:
+    listen: 127.0.0.1:50051
+    log: info
+  soma:
+    listen: 127.0.0.1:50091
+    provider_id: soma
+    robot_yaml: soma.yaml
+    log: info
+
+primitive:
+  - name: r1_state
+    path: ./primitives/r1_state
+    config:
+      network_interface: enp131s0
+      stale_after_s: 2.0
+
+service: []
+skill: []

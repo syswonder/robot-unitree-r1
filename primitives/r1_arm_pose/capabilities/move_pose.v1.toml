@@ -1,0 +1,9 @@
+[contract]
+id = "robonix/primitive/arm/move_pose"
+version = "1"
+kind = "primitive"
+idl = "r1_arm_pose/srv/MovePose.srv"
+description = "在官方 FSM 811（走跑运控）下，将当前 provider 对应腕部移动到 waist_yaw_link 中的绝对位姿。x,y,z 单位米；qx,qy,qz,qw 为归一化四元数；speed_rad_s 为各关节速度上限。五自由度无法满足的完整位姿会报错。运动采用关节插值，末端路径不保证直线；完成后释放控制权。"
+
+[mode]
+type = "rpc"
