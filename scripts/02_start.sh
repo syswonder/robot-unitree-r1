@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
-# Section 6 one-shot start: depth client, map service, Robonix stack, web client.
-# Run on the R1. VLM proxy/reverse tunnel are started on the PC (pc_tunnels.sh).
+# Onboard start: depth client, map service, Robonix stack, and web client.
+# Chat uses VLM_BASE_URL. The default is a proxy on 127.0.0.1:16667; this
+# repository does not start that proxy. See INSTALL.md.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 source "$HERE/env.sh"
 source "$HERE/vlm_profile.sh"
-load_vlm_profile
+if ! load_vlm_profile; then
+  echo "[start] WARN: model profile is incomplete; chat will be unavailable." >&2
+  echo "        DeepSeek: bash $HERE/vlm_key.sh set deepseek" >&2
+  echo "        Another endpoint: export VLM_UPSTREAM and VLM_MODEL, then bash $HERE/vlm_key.sh set gateway" >&2
+  VLM_PROVIDER="${VLM_PROVIDER:-deepseek}"
+  VLM_PROVIDER_LABEL="${VLM_PROVIDER_LABEL:-model}"
+  VLM_KEY_NAME="${VLM_KEY_NAME:-deepseek_api_key}"
+  VLM_PROFILE_MODEL="${VLM_PROFILE_MODEL:-}"
+fi
 
 export VLM_BASE_URL="${VLM_BASE_URL:-http://127.0.0.1:16667/v1}"
 export VLM_API_KEY="${VLM_API_KEY:-local-proxy}"
@@ -14,13 +23,8 @@ export VLM_MODEL="${VLM_MODEL:-$VLM_PROFILE_MODEL}"
 
 KEY_FILE="$SECRETS/$VLM_KEY_NAME"
 if [[ ! -s "$KEY_FILE" ]]; then
-  if [[ -t 0 && -x "$HERE/vlm_key.sh" ]]; then
-    echo "[start] $VLM_PROVIDER_LABEL API key is not configured."
-    "$HERE/vlm_key.sh" set "$VLM_PROVIDER" || true
-  else
-    echo "[start] WARN: $VLM_PROVIDER_LABEL API key missing; chat will be unavailable." >&2
-    echo "        On R1 run: $HERE/vlm_key.sh set $VLM_PROVIDER" >&2
-  fi
+  echo "[start] WARN: $VLM_PROVIDER_LABEL API key missing; chat will be unavailable." >&2
+  echo "        Run: bash $HERE/vlm_key.sh set $VLM_PROVIDER" >&2
 fi
 
 started=()
@@ -112,9 +116,10 @@ start_map
 start_stack
 start_web
 
-if ! curl -sf --max-time 3 http://127.0.0.1:16667/health >/dev/null 2>&1; then
-  echo "[start] WARN: VLM proxy/tunnel is not reachable on 127.0.0.1:16667" >&2
-  echo "        run scripts/pc_tunnels.sh start on the PC for chat" >&2
+if [[ "$VLM_BASE_URL" == http://127.0.0.1:16667/v1 ]] && \
+   ! curl -sf --max-time 3 http://127.0.0.1:16667/health >/dev/null 2>&1; then
+  echo "[start] WARN: the default model proxy is not listening on 127.0.0.1:16667." >&2
+  echo "        Start that proxy, or export VLM_BASE_URL to another OpenAI-compatible endpoint. See INSTALL.md." >&2
 fi
 
 if ! timeout 2 bash -c '</dev/tcp/192.168.123.161/5000' 2>/dev/null; then

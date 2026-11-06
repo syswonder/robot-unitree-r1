@@ -7,7 +7,7 @@ source "$HERE/env.sh"
 
 echo "== web ui"
 echo "R1 browser:   http://127.0.0.1:7860/"
-echo "PC browser:   http://127.0.0.1:7860/  (after pc_tunnels.sh start on PC)"
+echo "Remote browser: http://127.0.0.1:7860/ after forwarding port 7860 from the R1"
 
 echo "== sensor links"
 if timeout 2 bash -c '</dev/tcp/192.168.123.161/5000' 2>/dev/null; then

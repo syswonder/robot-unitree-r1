@@ -82,5 +82,5 @@ uv pip install --python .venv/bin/python --offline \
   --find-links "$BOOTSTRAP/py312-wheels" --no-build-isolation -e .
 
 echo "[build] done"
-echo "  source $R1_ROOT/env.sh"
-echo "  $R1_ROOT/scripts/02_start.sh"
+echo "  source $DEPLOY/scripts/env.sh"
+echo "  bash $DEPLOY/scripts/02_start.sh"

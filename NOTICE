@@ -1,0 +1,14 @@
+This deployment ships third-party material alongside code covered by LICENSE.
+
+The root manifest declares `Apache-2.0 AND BSD-3-Clause` because both licenses apply to the files published from this repository. Individual directories below keep the license of their upstream project. Do not treat that root expression as a relicensing of those directories.
+
+| Path | Source | What changed here | License |
+| --- | --- | --- | --- |
+| `primitives/` and `services/`, except `primitives/audio_client_bridge/` | Written for this deployment | | Apache-2.0, see `LICENSE` |
+| `urdf/` | <https://github.com/unitreerobotics/unitree_ros> `robots/r1_description` at `5994d4faef0a9cadd3287f8de0199a67eeb2a259` | A zero-offset `base_link` fixed joint was added. Mesh names and geometry are unchanged. | BSD-3-Clause, `urdf/LICENSE.unitree` |
+| `third_party/unitree_sdk2_python/` | <https://github.com/unitreerobotics/unitree_sdk2_python> at `814556d15970dd2ecf1c9984e845ca02ab07e206` | The default file trace in `ChannelConfigHasInterface` is disabled. See `third_party/unitree_sdk2_python/SOURCE`. | BSD-3-Clause, `third_party/unitree_sdk2_python/LICENSE` |
+| `primitives/audio_client_bridge/` | <https://github.com/syswonder/primitive-audio-client-bridge-rbnx> | Vendored into this tree so the deployment can build it by path. | MulanPSL-2.0, as declared in its `package_manifest.yaml` |
+| `services/r1_speech/` | This deployment, built against Robonix `services/speech` and Sherpa-ONNX | | `Apache-2.0 AND MulanPSL-2.0`, as declared in its `package_manifest.yaml` |
+| `common/r1_sensor_geometry/tests/data/` | ROS `ros-perception/image_common` `camera_info_manager/tests/test_calibration.yaml` at `faf0db265fa97d15631d343f79d64d86c423ee8f` | Values unchanged. This is a format sample, not an R1 calibration. | BSD, `common/r1_sensor_geometry/tests/data/LICENSE.image_common` |
+
+Speech model archives are not stored in git. Their URLs and SHA256 checksums are in `services/r1_speech/models.sources.json`. Their licenses are the licenses of those upstream releases.

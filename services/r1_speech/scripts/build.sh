@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 PKG="${RBNX_PACKAGE_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-ROOT="$(cd "$PKG/../../.." && pwd)"
-source "$ROOT/env.sh"
+DEPLOY_ROOT="$(cd "$PKG/../.." && pwd)"
+# shellcheck disable=SC1091
+source "$DEPLOY_ROOT/scripts/env.sh"
 CORE="$R1_ROOT/robonix/services/speech"
 PY="$PKG/rbnx-build/venv/bin/python"
 if [[ ! -x "$PY" ]]; then

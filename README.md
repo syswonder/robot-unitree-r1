@@ -6,18 +6,22 @@ The deployment includes the body description, state, health, RGB, depth, IMU and
 
 Maintainer: Zhenyu Zhang \<768726812@qq.com\>
 
+Prepare the Robonix source tree, wheels, toolchains, and speech models before the first build. The layout and checksums are in [INSTALL.md](INSTALL.md). Licenses for vendored files are in [NOTICE](NOTICE).
+
 ## Start
 
-On the R1, with the Robonix runtime already installed:
+Two entries are available. They do not start the same processes.
+
+`rbnx boot` starts only the providers and services named in the manifest: Atlas, Soma, Vitals, Pilot, the hardware primitives, speech, and the visual action decider. It does not start the Unitree depth receiver, the map service, or the web client. `rbnx` must already be on `PATH`, and the packages must already be built.
 
 ```bash
 source scripts/env.sh
 rbnx boot -f robonix_manifest.yaml --no-update-check
 ```
 
-`scripts/env.sh` exports `ROBONIX_DEPLOY_DIR`. Thresholds, the wake-word model and record directories in the manifest expand from that directory. Model credentials come from `VLM_BASE_URL`, `VLM_API_KEY` and `VLM_MODEL`. They are not stored in the repository.
+`scripts/env.sh` exports `ROBONIX_DEPLOY_DIR`. Thresholds, the wake-word model, and record directories in the manifest expand from that directory. For chat, export `VLM_BASE_URL`, `VLM_API_KEY`, and `VLM_MODEL` before this command, or accept the defaults documented in [INSTALL.md](INSTALL.md). The key is not stored in the manifest.
 
-Onboard helpers:
+`scripts/02_start.sh` is the onboard helper. It also starts the depth receiver, the map service on port 50107, and the web client on `http://127.0.0.1:7860/`. It expects the workspace in [INSTALL.md](INSTALL.md), Stereo patch PC1 with `video_hub` off, and an OpenAI-compatible service at `VLM_BASE_URL` when chat is required. Store a key with `bash scripts/vlm_key.sh set deepseek`.
 
 ```bash
 bash scripts/01_build.sh
@@ -25,7 +29,7 @@ bash scripts/02_start.sh
 bash scripts/03_stop.sh
 ```
 
-The read-only sensor deployment omits the chassis, arms, audio and dialogue:
+The read-only sensor deployment omits the chassis, arms, audio, and dialogue. It does not start the web client:
 
 ```bash
 bash scripts/start_sensors.sh
