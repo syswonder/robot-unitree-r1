@@ -154,7 +154,7 @@ def _current_frame():
 
 
 def _depth_message(frame, stamp_ns):
-    # 官方深度值为毫米；标准浮点深度为米，设备无效值转换为 NaN。
+    # Official depth values are millimetres. The standard float depth is metres, and invalid device values become NaN.
     meters = frame.astype("<f4") * np.float32(0.001)
     meters[(frame == 0) | (frame == 65535)] = np.nan
     message = sensor_msgs_pb2.Image(width=frame.shape[1], height=frame.shape[0],
@@ -195,7 +195,7 @@ def depth_snapshot(_msg: "std_msgs_mcp.Empty") -> "Image":
     if not valid.any():
         raise RuntimeError("depth frame contains no pixels in the display range")
     normalized = np.zeros(frame.shape, dtype=np.uint8)
-    # 显示范围只用于快照，标准度量深度保留全部有效测量值。
+    # The display range applies only to the snapshot. The metric depth stream keeps every valid measurement.
     scaled = np.clip((frame[valid].astype(np.float32) - lo) / (hi - lo), 0.0, 1.0)
     normalized[valid] = (255.0 - scaled * 255.0).astype(np.uint8)
     png = _png_gray(normalized)
@@ -239,7 +239,7 @@ def extrinsics(_request, context):
     while context.is_active() and not _stop.is_set():
         mount = _mount
         if mount is None:
-            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "未配置实测 extrinsics_file")
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "no measured extrinsics_file is configured")
         if mount is not previous:
             yield mount.message()
             previous = mount
@@ -274,7 +274,7 @@ def init(cfg: dict):
     frame_id = str(cfg.get("frame_id", "r1_depth_camera_optical_frame")).strip()
     byte_order = str(cfg.get("byte_order", "big"))
     if not frame_id or byte_order not in ("big", "little"):
-        raise ValueError("frame_id 不得为空，byte_order 必须为 big 或 little")
+        raise ValueError("frame_id must not be empty, and byte_order must be big or little")
     _calibration, _mount = load_geometry(cfg, Path(__file__).resolve().parents[3], frame_id, width, height)
 
     _settings.update(
@@ -324,7 +324,7 @@ def shutdown():
     if _worker is not None:
         _worker.join(timeout=3)
         if _worker.is_alive():
-            raise RuntimeError("深度读取线程未退出")
+            raise RuntimeError("the depth reader thread did not exit")
         _worker = None
     return Ok()
 

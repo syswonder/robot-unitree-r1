@@ -31,13 +31,13 @@ class Runtime:
         if request.sample_path:
             path = Path(request.sample_path).resolve()
             if not path.is_relative_to(Path(self.settings.data_dir).resolve()):
-                raise ValueError("归档样本必须属于本服务 data_dir")
+                raise ValueError("an archived sample must stay inside this service data_dir")
             sample = load_sample(path)
             if request.instruction and request.instruction != sample.instruction:
-                raise ValueError("归档样本指令与请求不一致")
+                raise ValueError("the archived sample instruction does not match the request")
         else:
             if not request.instruction.strip():
-                raise ValueError("instruction 不能为空")
+                raise ValueError("instruction must not be empty")
             path = self.robot.capture(request.instruction, request.scene_id or "live")
         prepared = time.monotonic()
         decision = self.client.evaluate(path, pipeline, list(Action), request_id)
@@ -50,11 +50,11 @@ class Runtime:
         pipeline = Pipeline(request.pipeline or Pipeline.DIRECT_IMAGE)
         instruction = request.instruction.strip()
         if not instruction or len(instruction) > 2000:
-            raise ValueError("instruction 长度无效")
+            raise ValueError("instruction length is invalid")
         signature = fingerprint({"pipeline": pipeline.value, "instruction": instruction, "scene_id": request.scene_id})
         with self.lock:
             if self.closed:
-                raise RuntimeError("服务已经关闭")
+                raise RuntimeError("the service is shut down")
             existing = self.store.find_request(request_id)
             if existing is not None:
                 if existing[0] != signature:
@@ -62,7 +62,7 @@ class Runtime:
                 return existing[1]
             actions = self.settings.live_actions()
             if self.active_run is not None:
-                raise RuntimeError(f"BUSY：{self.active_run}")
+                raise RuntimeError(f"BUSY: {self.active_run}")
             run_id = str(uuid4())
             record = {"run_id": run_id, "request_id": request_id, "state": "ACCEPTED",
                       "error_code": "", "error_message": "", "stop_requested": False, "stop_confirmed": False,
@@ -79,7 +79,7 @@ class Runtime:
     def transition(self, run_id, state, cancelled):
         with self.lock:
             if cancelled.is_set():
-                raise RuntimeError("任务已经取消")
+                raise RuntimeError("the task was cancelled")
             self.store.update(run_id, state=state)
 
     def _run(self, record, instruction, scene_id, pipeline, actions, cancelled):
@@ -90,21 +90,21 @@ class Runtime:
             path = self.robot.capture(instruction, scene_id)
             sample = load_sample(path)
             if sample.source_kind != "r1_live":
-                raise ValueError("run_step 需要实时 R1 观察")
+                raise ValueError("run_step requires a live R1 observation")
             if (time.monotonic_ns() - sample.received_monotonic_ns) / 1e9 > 2:
-                raise RuntimeError("OBSERVATION_STALE：提交模型前图片已经过期")
+                raise RuntimeError("OBSERVATION_STALE: the image expired before it was sent to the model")
             self.store.update(run_id, sample_path=str(path))
             self.transition(run_id, "DECIDING", cancelled)
             decision = self.client.evaluate(path, pipeline, actions, UUID(record["request_id"]), cancelled)
             self.store.update(run_id, decision=decision.model_dump(mode="json"))
             self.transition(run_id, "VALIDATING", cancelled)
             if (time.monotonic_ns() - sample.received_monotonic_ns) / 1e9 > self.settings.decision_age_limit_s:
-                raise RuntimeError("OBSERVATION_STALE：执行前决策已经过期")
+                raise RuntimeError("OBSERVATION_STALE: the decision expired before execution")
             self.robot.validate_state(self.robot.state())
             if decision.selected_action == Action.STOP:
                 with self.lock:
                     if cancelled.is_set():
-                        raise RuntimeError("任务已经取消")
+                        raise RuntimeError("the task was cancelled")
                     self.store.update(run_id, state="SUCCEEDED", termination_reason="selected_stop")
                 return
             with self.lock:
@@ -157,7 +157,7 @@ class Runtime:
             if record["state"] in TERMINAL:
                 return record
             if run_id != self.active_run:
-                raise RuntimeError("当前进程没有该任务")
+                raise RuntimeError("this process does not have that task")
             self.cancelled.set()
             self.store.update(run_id, state="CANCELLING")
             moving = record["execution_started"]
@@ -181,4 +181,4 @@ class Runtime:
         if worker is not None:
             worker.join(timeout=self.settings.pipeline_timeout_s + self.settings.capture_timeout_s * 3 + 5)
             if worker.is_alive():
-                raise RuntimeError("任务线程未在关闭期限内结束")
+                raise RuntimeError("the task thread did not finish within the shutdown deadline")

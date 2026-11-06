@@ -33,7 +33,7 @@ _app_name = ""
 def _integer(config, name, default):
     value = config.get(name, default)
     if isinstance(value, bool) or not isinstance(value, int):
-        raise ValueError(f"{name} 必须为整数")
+        raise ValueError(f"{name} must be an integer")
     return value
 
 
@@ -62,18 +62,18 @@ def _open_multicast_socket():
 def _stop_playback(client):
     code, _ = client._Call(ROBOT_API_ID_AUDIO_STOP_PLAY, json.dumps({"app_name": _app_name}))
     if code != 0:
-        raise RuntimeError(f"Unitree voice 停止播放失败：{code}")
+        raise RuntimeError(f"Unitree voice failed to stop playback: {code}")
 
 
 @r1_audio.grpc("robonix/primitive/audio/mic")
 def mic_stream(_request, context):
     if _stop.is_set() or _audio_client is None:
-        context.abort(grpc.StatusCode.FAILED_PRECONDITION, "音频原语尚未初始化或已经关闭")
+        context.abort(grpc.StatusCode.FAILED_PRECONDITION, "the audio primitive is not initialized or is already shut down")
     sock = _open_multicast_socket()
     with _lock:
         if _stop.is_set():
             sock.close()
-            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "音频原语已经关闭")
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "the audio primitive is shut down")
         _sockets.add(sock)
     sequence = 0
     last_packet = time.monotonic()
@@ -84,7 +84,7 @@ def mic_stream(_request, context):
                 data = sock.recv(65536)
             except socket.timeout:
                 if time.monotonic() - last_packet > _settings["stale_after_s"]:
-                    context.abort(grpc.StatusCode.UNAVAILABLE, "R1 麦克风组播数据超时")
+                    context.abort(grpc.StatusCode.UNAVAILABLE, "R1 microphone multicast data timed out")
                 continue
             except OSError as error:
                 if _stop.is_set():
@@ -93,7 +93,7 @@ def mic_stream(_request, context):
             if not data:
                 continue
             if len(data) % 2:
-                context.abort(grpc.StatusCode.DATA_LOSS, "麦克风数据未包含完整的 s16le 采样")
+                context.abort(grpc.StatusCode.DATA_LOSS, "microphone data does not contain a whole s16le sample")
             last_packet = time.monotonic()
             pending.extend(data)
             while (len(pending) >= _settings["chunk_bytes"]
@@ -113,9 +113,9 @@ def mic_stream(_request, context):
 def speaker_stream(requests, context):
     client = _audio_client
     if client is None or _stop.is_set():
-        context.abort(grpc.StatusCode.FAILED_PRECONDITION, "音频原语尚未初始化或已经关闭")
+        context.abort(grpc.StatusCode.FAILED_PRECONDITION, "the audio primitive is not initialized or is already shut down")
     if not _speaker_lock.acquire(blocking=False):
-        context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "扬声器正在播放其他数据流")
+        context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "the speaker is already playing another stream")
     stream_id = uuid.uuid4().hex
     playing = False
     playback_until = 0.0
@@ -125,16 +125,16 @@ def speaker_stream(requests, context):
                 break
             payload = bytes(chunk.data)
             if len(payload) % 2:
-                context.abort(grpc.StatusCode.INVALID_ARGUMENT, "播放数据必须包含完整的 s16le 采样")
+                context.abort(grpc.StatusCode.INVALID_ARGUMENT, "playback data must contain whole s16le samples")
             if not payload:
                 continue
             playing = True
             _playing.set()
             code, _ = client.PlayStream(_app_name, stream_id, payload)
             if code != 0:
-                context.abort(grpc.StatusCode.UNAVAILABLE, f"Unitree voice 播放失败：{code}")
+                context.abort(grpc.StatusCode.UNAVAILABLE, f"Unitree voice playback failed: {code}")
             playback_until = max(playback_until, time.monotonic()) + len(payload) / 32000.0
-        # 正常结束时等待已提交的 PCM 播放完成；取消和关闭及时结束等待。
+        # On a normal end, wait for the submitted PCM to finish. Cancel and shutdown end that wait immediately.
         while context.is_active() and not _stop.is_set():
             remaining = playback_until - time.monotonic()
             if remaining <= 0:
@@ -160,16 +160,16 @@ def init(config):
     chunk_bytes = _integer(config, "chunk_bytes", 32000)
     stale = float(config.get("stale_after_s", 3.0))
     if not interface or len(interface.encode()) > 15:
-        raise ValueError("network_interface 必须是非空且不超过 15 字节的 Linux 接口名称")
+        raise ValueError("network_interface must be a non-empty Linux interface name of at most 15 bytes")
     address = ipaddress.IPv4Address(group)
     if not address.is_multicast or not 1 <= port <= 65535:
-        raise ValueError("multicast_group 必须为 IPv4 组播地址，port 必须在 1 至 65535")
+        raise ValueError("multicast_group must be an IPv4 multicast address, and port must be from 1 to 65535")
     if sample_rate != 16000:
-        raise ValueError("官方 R1 音频流固定使用 16000 Hz、单声道 pcm_s16le")
+        raise ValueError("the official R1 audio stream is fixed at 16000 Hz mono pcm_s16le")
     if chunk_bytes <= 0 or chunk_bytes % 2:
-        raise ValueError("chunk_bytes 必须为正偶数")
+        raise ValueError("chunk_bytes must be a positive even number")
     if not math.isfinite(stale) or stale <= 0:
-        raise ValueError("stale_after_s 必须为有限正数")
+        raise ValueError("stale_after_s must be a finite positive number")
     _interface_ipv4(interface)
     _settings.update(network_interface=interface, multicast_group=str(address), port=port,
                      sample_rate_hz=sample_rate, chunk_bytes=chunk_bytes, stale_after_s=stale)
@@ -179,7 +179,7 @@ def init(config):
     client.SetTimeout(3.0)
     code, _ = client.GetVolume()
     if code != 0:
-        raise RuntimeError(f"Unitree voice 服务查询失败：{code}")
+        raise RuntimeError(f"Unitree voice service query failed: {code}")
     _app_name = f"robonix-{r1_audio.id}"
     _audio_client = client
     _stop.clear()

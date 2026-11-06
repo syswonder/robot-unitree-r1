@@ -4,8 +4,8 @@
 # Pinned commit: 5994d4faef0a9cadd3287f8de0199a67eeb2a259 (2026-09-30)
 # License: BSD-3-Clause, see urdf/LICENSE.unitree.
 #
-# 本体描述及原语能力关联；原语由部署清单启动。
-# 双臂运动使用官方走跑运控模式 811。
+# Body description and primitive capability links. The deployment manifest starts the primitives.
+# Both arms move in official sport mode 811.
 
 urdf:
   path: ./urdf/R1.urdf
@@ -46,8 +46,8 @@ robot:
   exports:
     - provider_id: r1_chassis
       capabilities:
-        - { path: robonix/primitive/chassis/move, description: "官方 SetVelocity 限时行走，距离和角度为开环近似量。" }
-        - { path: robonix/primitive/chassis/twist_in, description: "标准 Twist 速度输入；非零行走需要 FSM 811。" }
+        - { path: robonix/primitive/chassis/move, description: "Timed walk through official SetVelocity. Distance and angle are open-loop approximations." }
+        - { path: robonix/primitive/chassis/twist_in, description: "Standard Twist velocity input. Non-zero walking requires FSM 811." }
 
     - provider_id: r1_state
       capabilities:
@@ -81,27 +81,27 @@ robot:
             - provider_id: r1_camera
               capabilities:
                 - { path: robonix/primitive/camera/snapshot, description: "Capture one RGB frame from the R1 front camera." }
-                - { path: robonix/primitive/camera/rgb, description: "标准 rgb8 图像流，时间戳为主机接收时间。" }
-                - { path: robonix/primitive/camera/intrinsics, description: "输出 CameraInfo；未标定时 K 为零。" }
-                - { path: robonix/primitive/camera/extrinsics, description: "静态安装外参；缺少实测配置时接口报告前置条件未满足。" }
+                - { path: robonix/primitive/camera/rgb, description: "Standard rgb8 image stream. The stamp is the host receive time." }
+                - { path: robonix/primitive/camera/intrinsics, description: "Publishes CameraInfo. K is zero when the camera is uncalibrated." }
+                - { path: robonix/primitive/camera/extrinsics, description: "Static mount extrinsic. Without a measured file the interface reports a failed precondition." }
 
         - id: depth_camera
           type: depth_camera
           exports:
             - provider_id: r1_depth
               capabilities:
-                - { path: robonix/primitive/camera/depth, description: "32FC1 度量深度流，单位米，未完成 RGB 配准。" }
-                - { path: robonix/primitive/camera/depth_snapshot, description: "用于显示的深度灰度快照。" }
-                - { path: robonix/primitive/camera/intrinsics, description: "深度成像网格的 CameraInfo；未标定时 K 为零。" }
-                - { path: robonix/primitive/camera/extrinsics, description: "深度光学 frame 的实测安装外参；需要独立配置。" }
+                - { path: robonix/primitive/camera/depth, description: "32FC1 metric depth stream in metres. RGB registration is not done." }
+                - { path: robonix/primitive/camera/depth_snapshot, description: "Grayscale depth snapshot for display." }
+                - { path: robonix/primitive/camera/intrinsics, description: "CameraInfo for the depth image grid. K is zero when uncalibrated." }
+                - { path: robonix/primitive/camera/extrinsics, description: "Measured mount extrinsic of the depth optical frame. It needs its own file." }
 
         - id: audio
           type: audio_io
           exports:
             - provider_id: r1_audio
               capabilities:
-                - { path: robonix/primitive/audio/mic, description: "官方头部麦克风 PCM 数据流。" }
-                - { path: robonix/primitive/audio/speaker, description: "通过官方 voice 服务播放 PCM。" }
+                - { path: robonix/primitive/audio/mic, description: "Official head-microphone PCM stream." }
+                - { path: robonix/primitive/audio/speaker, description: "Plays PCM through the official voice service." }
 
         - id: battery
           type: battery
@@ -145,17 +145,17 @@ robot:
               exports:
                 - provider_id: r1_left_arm
                   capabilities:
-                    - { path: robonix/primitive/arm/end_pose, description: "左腕相对于 waist_yaw_link 的标准位姿。" }
-                    - { path: robonix/primitive/arm/pos_command, description: "左腕完整位姿目标，执行同步关节插值。" }
-                    - { path: robonix/primitive/arm/get_end_pose, description: "读取左腕位置、姿态和坐标系名称。" }
-                    - { path: robonix/primitive/arm/move_pose, description: "通过 URDF 逆运动学控制左腕目标位姿。" }
+                    - { path: robonix/primitive/arm/end_pose, description: "Standard left-wrist pose relative to waist_yaw_link." }
+                    - { path: robonix/primitive/arm/pos_command, description: "Full left-wrist pose goal, executed as synchronized joint interpolation." }
+                    - { path: robonix/primitive/arm/get_end_pose, description: "Reads the left-wrist position, orientation and frame name." }
+                    - { path: robonix/primitive/arm/move_pose, description: "Commands the left-wrist pose through URDF inverse kinematics." }
                 - provider_id: r1_arm
                   capabilities:
-                    - { path: robonix/primitive/arm/joint_states, description: "读取双臂关节反馈。" }
-                    - { path: robonix/primitive/arm/joint_command, description: "在 FSM 811 下执行多个具名关节的位置指令。" }
-                    - { path: robonix/primitive/arm/get_joint_states, description: "读取双臂角度、限位及速度限制。" }
-                    - { path: robonix/primitive/arm/move_joint, description: "在 FSM 811 下按 URDF 名称执行单关节角度指令。" }
-                    - { path: robonix/primitive/arm/move_joints, description: "一次同步执行多个关节目标，可同时包含左右双臂，共用运动起止时间。" }
+                    - { path: robonix/primitive/arm/joint_states, description: "Reads both arms' joint feedback." }
+                    - { path: robonix/primitive/arm/joint_command, description: "Runs named joint position commands in FSM 811." }
+                    - { path: robonix/primitive/arm/get_joint_states, description: "Reads both arms' angles, limits and speed limits." }
+                    - { path: robonix/primitive/arm/move_joint, description: "Runs one joint-angle command by URDF name in FSM 811." }
+                    - { path: robonix/primitive/arm/move_joints, description: "Runs several joint targets together, including both arms, on one shared time base." }
               components:
                 - { id: left_shoulder_pitch, type: joint, urdf_joint: left_shoulder_pitch_joint, exports: [] }
                 - { id: left_shoulder_roll, type: joint, urdf_joint: left_shoulder_roll_joint, exports: [] }
@@ -169,17 +169,17 @@ robot:
               exports:
                 - provider_id: r1_right_arm
                   capabilities:
-                    - { path: robonix/primitive/arm/end_pose, description: "右腕相对于 waist_yaw_link 的标准位姿。" }
-                    - { path: robonix/primitive/arm/pos_command, description: "右腕完整位姿目标，执行同步关节插值。" }
-                    - { path: robonix/primitive/arm/get_end_pose, description: "读取右腕位置、姿态和坐标系名称。" }
-                    - { path: robonix/primitive/arm/move_pose, description: "通过 URDF 逆运动学控制右腕目标位姿。" }
+                    - { path: robonix/primitive/arm/end_pose, description: "Standard right-wrist pose relative to waist_yaw_link." }
+                    - { path: robonix/primitive/arm/pos_command, description: "Full right-wrist pose goal, executed as synchronized joint interpolation." }
+                    - { path: robonix/primitive/arm/get_end_pose, description: "Reads the right-wrist position, orientation and frame name." }
+                    - { path: robonix/primitive/arm/move_pose, description: "Commands the right-wrist pose through URDF inverse kinematics." }
                 - provider_id: r1_arm
                   capabilities:
-                    - { path: robonix/primitive/arm/joint_states, description: "读取双臂关节反馈。" }
-                    - { path: robonix/primitive/arm/joint_command, description: "在 FSM 811 下执行多个具名关节的位置指令。" }
-                    - { path: robonix/primitive/arm/get_joint_states, description: "读取双臂角度、限位及速度限制。" }
-                    - { path: robonix/primitive/arm/move_joint, description: "在 FSM 811 下按 URDF 名称执行单关节角度指令。" }
-                    - { path: robonix/primitive/arm/move_joints, description: "一次同步执行多个关节目标，可同时包含左右双臂，共用运动起止时间。" }
+                    - { path: robonix/primitive/arm/joint_states, description: "Reads both arms' joint feedback." }
+                    - { path: robonix/primitive/arm/joint_command, description: "Runs named joint position commands in FSM 811." }
+                    - { path: robonix/primitive/arm/get_joint_states, description: "Reads both arms' angles, limits and speed limits." }
+                    - { path: robonix/primitive/arm/move_joint, description: "Runs one joint-angle command by URDF name in FSM 811." }
+                    - { path: robonix/primitive/arm/move_joints, description: "Runs several joint targets together, including both arms, on one shared time base." }
               components:
                 - { id: right_shoulder_pitch, type: joint, urdf_joint: right_shoulder_pitch_joint, exports: [] }
                 - { id: right_shoulder_roll, type: joint, urdf_joint: right_shoulder_roll_joint, exports: [] }
@@ -196,27 +196,27 @@ robot:
                 - { id: head_yaw, type: joint, urdf_joint: head_yaw_joint, exports: [] }
 
 description:
-  summary: "Unitree R1 EDU 本体、健康状态、感知、官方高层行走与双臂关节及腕部位姿控制。"
+  summary: "Unitree R1 EDU body, health, perception, official high-level walking, and dual-arm joint and wrist-pose control."
   can_do:
-    - "通过官方 SetVelocity 提供 chassis/move MCP、gRPC 和 chassis/twist_in；非零速度需要 FSM 811，已验证前进 0.3 m/s、后退 -0.4 m/s，持续五秒。"
-    - "通过标准接口和 MCP 工具在 FSM 811 下执行双臂具名关节角度指令，move_joints 可在一次调用中同步控制多个关节。"
-    - "通过官方 URDF 计算左右腕部位姿，求解完整位姿目标并执行同步关节插值。"
+    - "Serves chassis/move over MCP and gRPC, and chassis/twist_in, through official SetVelocity. Non-zero speed requires FSM 811. Forward 0.3 m/s and backward -0.4 m/s for five seconds have been checked."
+    - "Runs named dual-arm joint angles in FSM 811 through the standard interface and MCP tools. move_joints can move several joints in one call."
+    - "Computes both wrist poses from the official URDF, solves a full pose goal, and runs synchronized joint interpolation."
     - "Serve the official R1 URDF and the semantic body/component tree."
     - "Expose read-only state, health and stereo RGB/depth snapshot providers."
     - "Show battery SOC/voltage/temperature, IMU temperature and joint telemetry in Vitals."
     - "Return a 544x448 depth PNG from the binocular depth camera."
   cannot_do:
-    - "不提供直接腿部关节、身体姿态指令、机械臂碰撞规划或末端直线路径规划。"
+    - "Does not command leg joints or body posture directly, and does not plan arm collisions or a straight tip path."
     - "Publish a verified TF tree; no robot-description provider is included yet."
     - "Provide the official SLAM service; it requires R1-EDU + Mid360 LiDAR and unitree_slam is not installed."
     - "Provide a metric scene map; no scene/mapping service is deployed."
-    - "相机真实标定、RGB-D 配准和相机安装 TF 尚未完成；未标定 CameraInfo 的 K 为零。"
+    - "Measured camera calibration, RGB-D registration and the camera mount TF are not done. Uncalibrated CameraInfo has K equal to zero."
   notes:
-    - "行走方向通过有符号速度指定；执行入口按实时 FSM、配置和运动反馈检查本次请求。"
-    - "侧向、旋转和实际行走距离精度仍待现场验收。"
+    - "Walking direction is a signed speed. The entry checks the live FSM, configuration and motion feedback for each request."
+    - "Lateral motion, rotation and measured walking distance still need on-robot acceptance."
     - "URDF source: unitreerobotics/unitree_ros robots/r1_description at commit 5994d4faef0a9cadd3287f8de0199a67eeb2a259."
     - "A zero-offset base_link wrapper was added; pelvis_link remains the physical root."
     - "Dimensions and mass are derived from the URDF; footprint is a provisional static support rectangle."
     - "The 26 revolute joints match the R1 EDU body; the R1 Air 20-DOF model is not used."
-    - "已接入 r1_imu 标准接口；相机标定及安装变换需要真实设备数据。"
+    - "The standard r1_imu interface is connected. Camera calibration and the mount transform need measured device data."
     - "r1_camera uses the stereo UDP stream because video_hub is disabled for the stereo/depth service."

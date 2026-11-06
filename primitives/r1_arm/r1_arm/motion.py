@@ -64,9 +64,9 @@ class ArmMotion:
         while time.monotonic() < deadline:
             if self.future.done():
                 self.future.result()
-                raise RuntimeError("机械臂发布任务提前结束")
+                raise RuntimeError("the arm publisher task ended early")
             if self.controller.stop.is_set() or not self.active():
-                raise RuntimeError("机械臂指令已取消")
+                raise RuntimeError("the arm command was cancelled")
             self.controller.snapshot(moving=True)
             self.finished.wait(min(PERIOD, max(0.0, deadline - time.monotonic())))
 
@@ -82,14 +82,14 @@ class ArmMotion:
     def _publish(self):
         self.command.crc = self.controller.crc.Crc(self.command)
         if not self.publisher.Write(self.command):
-            raise RuntimeError("arm_sdk DDS 发布失败")
+            raise RuntimeError("arm_sdk DDS publish failed")
 
     def _run(self):
         deadline = self.began
         try:
             while not self.finished.is_set():
                 if self.controller.stop.is_set() or not self.active():
-                    raise RuntimeError("机械臂指令已取消")
+                    raise RuntimeError("the arm command was cancelled")
                 self.controller.snapshot(moving=True)
                 now = time.monotonic()
                 with self.plan_lock:

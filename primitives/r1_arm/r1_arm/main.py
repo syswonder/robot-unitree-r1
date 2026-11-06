@@ -24,10 +24,10 @@ stream_lock = threading.Lock()
 
 def read_joints():
     if controller is None:
-        raise RuntimeError("r1_arm 尚未初始化")
+        raise RuntimeError("r1_arm is not initialized")
     low = controller.snapshot()
     mode = controller.fsm()
-    return {"fsm_id": mode, "fsm_mode": FSM_MODES.get(mode, "未知模式"),
+    return {"fsm_id": mode, "fsm_mode": FSM_MODES.get(mode, "unknown mode"),
             "motion_fsm_ids": [811],
             "position_rad": {name: low["q"][index] for name, index in JOINTS.items()},
             "limits_rad": controller.limits, "velocity_limits_rad_s": controller.velocity_limits}
@@ -35,7 +35,7 @@ def read_joints():
 
 @provider.mcp("robonix/primitive/arm/get_joint_states")
 def get_joint_states(_request: GetJointStates_Request) -> GetJointStates_Response:
-    """读取双臂关节角度、限位和指令限制。"""
+    """Read both arms' joint angles, limits and command limits."""
     return GetJointStates_Response(json=json.dumps(read_joints(), ensure_ascii=False))
 
 
@@ -46,14 +46,14 @@ def get_joint_states_grpc(_request):
 
 def run_move(request, active=lambda: True):
     if controller is None:
-        raise RuntimeError("r1_arm 尚未初始化")
+        raise RuntimeError("r1_arm is not initialized")
     return controller.move(request.joint_name, request.target_rad,
                            request.speed_rad_s, active=active)
 
 
 @provider.mcp("robonix/primitive/arm/move_joint")
 async def move_joint(request: MoveJoint_Request) -> MoveJoint_Response:
-    """按照 URDF 关节名称移动单个机械臂关节，需要 FSM 811（走跑运控）。"""
+    """Move one arm joint by URDF name. Requires FSM 811 (walk-run)."""
     cancelled = threading.Event()
     try:
         result = await asyncio.to_thread(run_move, request, lambda: not cancelled.is_set())
@@ -70,16 +70,16 @@ def move_joint_grpc(request, context):
 
 def run_move_joints(request, active=lambda: True):
     if controller is None:
-        raise RuntimeError("r1_arm 尚未初始化")
+        raise RuntimeError("r1_arm is not initialized")
     if len(request.speed_rad_s) != len(request.joint_names):
-        raise ValueError("speed_rad_s 长度必须与 joint_names 相同")
+        raise ValueError("speed_rad_s must have the same length as joint_names")
     return controller.move_joints(request.joint_names, request.target_rad,
                                   request.speed_rad_s, active=active)
 
 
 @provider.mcp("robonix/primitive/arm/move_joints")
 async def move_joints(request: MoveJoints_Request) -> MoveJoints_Response:
-    """在 FSM 811 下同步移动多个关节；三个等长数组为 URDF 名称、目标 rad、速度上限 rad/s，可同时包含左右双臂。"""
+    """Move several joints together in FSM 811. Three equal-length arrays are URDF names, target rad and speed limits in rad/s, and may include both arms."""
     cancelled = threading.Event()
     try:
         result = await asyncio.to_thread(run_move_joints, request, lambda: not cancelled.is_set())
@@ -101,7 +101,7 @@ def move_joints_grpc(request, context):
 def joint_states(_request, context):
     while context.is_active() and not stopping.is_set():
         if controller is None:
-            raise RuntimeError("r1_arm 尚未初始化")
+            raise RuntimeError("r1_arm is not initialized")
         try:
             low = controller.snapshot()
         except RuntimeError as error:
@@ -123,17 +123,17 @@ def joint_states(_request, context):
 @provider.grpc("robonix/primitive/arm/joint_command")
 def joint_command(requests, context):
     if controller is None:
-        raise RuntimeError("r1_arm 尚未初始化")
+        raise RuntimeError("r1_arm is not initialized")
 
     def commands():
         for request in requests:
             if request.effort:
-                raise ValueError("joint_command 不支持 effort")
+                raise ValueError("joint_command does not accept effort")
             yield request.name, request.position, request.velocity
 
     with stream_lock:
         if stopping.is_set():
-            context.abort(grpc.StatusCode.UNAVAILABLE, "机械臂接口已关闭")
+            context.abort(grpc.StatusCode.UNAVAILABLE, "the arm interface is shut down")
         stream_contexts.add(context)
     try:
         try:
@@ -151,7 +151,7 @@ def init(config):
     global controller
     controller = ArmController(config)
     stopping.clear()
-    print("[r1_arm] 已订阅关节反馈，机械臂运动使用 FSM 811", flush=True)
+    print("[r1_arm] subscribed to joint feedback; arm motion uses FSM 811", flush=True)
     return Ok()
 
 

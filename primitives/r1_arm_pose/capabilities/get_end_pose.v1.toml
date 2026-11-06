@@ -3,7 +3,7 @@ id = "robonix/primitive/arm/get_end_pose"
 version = "1"
 kind = "primitive"
 idl = "r1_arm_pose/srv/GetEndPose.srv"
-description = "读取当前 provider 对应腕部在 waist_yaw_link 中的绝对位姿。返回 frame_id、tip_link、position_m、quaternion_xyzw；单位米和归一化四元数。"
+description = "Reads the absolute wrist pose of this provider in waist_yaw_link. Returns frame_id, tip_link, position_m and quaternion_xyzw, in metres and a normalized quaternion."
 
 [mode]
 type = "rpc"

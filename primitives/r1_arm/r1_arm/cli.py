@@ -10,7 +10,7 @@ import robonix_contracts_pb2_grpc as services
 
 
 def main():
-    parser = argparse.ArgumentParser(description="R1 双臂反馈和单关节指令")
+    parser = argparse.ArgumentParser(description="R1 dual-arm feedback and single-joint commands")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("status")
     move = commands.add_parser("move")

@@ -3,10 +3,10 @@ manifestVersion: 1
 package:
   name: robonix.primitive.unitree.r1_camera
   version: 0.1.0
-  description: R1 RGB 标准数据流、相机标定与快照接口。
+  description: R1 RGB standard stream, camera calibration and snapshot interface.
   tags: [primitive, unitree, r1, camera, snapshot, read-only]
   maintainers:
-    - 张振宇 <768726812@qq.com>
+    - Zhenyu Zhang <768726812@qq.com>
   license: Apache-2.0 AND BSD-3-Clause
 
 build: bash scripts/build.sh

@@ -1,15 +1,15 @@
 specVersion: 1
-description: R1 双臂关节控制配置。
+description: R1 dual-arm joint control settings.
 properties:
   network_interface:
     type: string
     default: eth10
-    description: 机器人 DDS 网络接口，必须已经存在并处于可用状态。
+    description: Robot DDS network interface. It must already exist and be up.
   max_acceleration_rad_s2:
     type: number
     default: 0.5
-    description: 五次关节轨迹的加速度幅度上限，单位 rad/s²，必须为有限正数；属于部署参数。
+    description: Acceleration magnitude limit of the quintic joint trajectory, in rad/s^2. Must be a finite positive deployment parameter.
   max_jerk_rad_s3:
     type: number
     default: 2.0
-    description: 五次关节轨迹的 jerk 幅度上限，单位 rad/s³，必须为有限正数；属于部署参数。
+    description: Jerk magnitude limit of the quintic joint trajectory, in rad/s^3. Must be a finite positive deployment parameter.

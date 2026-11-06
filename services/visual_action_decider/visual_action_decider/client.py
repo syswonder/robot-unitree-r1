@@ -23,7 +23,7 @@ def visual_state(encoded):
 def request_body(sample, actions, assets=None, descriptions=None):
     criteria = {action.value: CANDIDATES[action] for action in actions}
     if len(criteria) < 2:
-        raise ValueError("Choice 请求至少需要两个候选")
+        raise ValueError("a Choice request needs at least two candidates")
     state = {"instruction": sample.instruction, "robot_state": {
                  key: sample.robot_state[key] for key in ("fsm", "stale", "age_s") if key in sample.robot_state},
              "history": sample.history, "candidates": criteria,
@@ -57,7 +57,7 @@ class DecisionClient:
 
         def remaining():
             if cancelled is not None and cancelled.is_set():
-                raise RuntimeError("请求已经取消")
+                raise RuntimeError("the request was cancelled")
             value = deadline - time.monotonic()
             if value <= 0:
                 raise TimeoutError("PIPELINE_TIMEOUT")
@@ -68,7 +68,7 @@ class DecisionClient:
             response.raise_for_status()
             info = response.json()
             if info["model_revision"] != self.settings.model_revision or info["device"] != "cuda":
-                raise ValueError("模型 revision 或运行设备不符合配置")
+                raise ValueError("the model revision or runtime device does not match the configuration")
             save_json(folder / "model-info.json", info)
             encoded = None
             visual_started = time.monotonic()
@@ -79,9 +79,9 @@ class DecisionClient:
                 response.raise_for_status()
                 encoded = EncodeResponse.model_validate(response.json())
                 if encoded.request_id != request_id or tuple(encoded.images) != tuple(assets):
-                    raise ValueError("视觉响应与请求不匹配")
+                    raise ValueError("the visual response does not match the request")
                 if any(encoded.images[name].sha256 != asset.sha256 for name, asset in assets.items()):
-                    raise ValueError("视觉响应的图片校验信息不匹配")
+                    raise ValueError("the visual response image checksum does not match")
                 save_json(folder / "visual.json", encoded.model_dump(mode="json"))
             visual_ms = (time.monotonic() - visual_started) * 1000
             body = request_body(sample, actions, assets if encoded is None else None,
@@ -101,7 +101,7 @@ class DecisionClient:
             answer = raw["answers"]["next_action"]
             probabilities = answer["probabilities"]
             if answer["type"] != "choice" or set(probabilities) != {action.value for action in actions}:
-                raise ValueError("INVALID_MODEL_RESPONSE：候选集合不一致")
+                raise ValueError("INVALID_MODEL_RESPONSE: the candidate set does not match")
             config = {"settings": self.settings.model_dump(), "model_info": {
                           key: info[key] for key in ("model_revision", "model_path", "device", "temperatures", "resource_policy")},
                       "visual_config": encoded.config_hash if encoded is not None else None,

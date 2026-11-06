@@ -26,18 +26,18 @@ JOINTS = {
     "right_elbow_joint": 25,
     "right_wrist_roll_joint": 26,
 }
-# R1 ArmSdk 同时接管这十三个关节；腰部和头部保持接管前的位置。
+# R1 ArmSdk takes over these thirteen joints. Waist and head hold the pose from before the take-over.
 CONTROLLED = tuple(JOINTS.values()) + (13, 29, 30)
 KP = (50, 50, 40, 40, 30, 50, 50, 40, 40, 30, 50, 15, 15)
 KD = (2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 1, 1)
 ROOT = Path(__file__).resolve().parents[3]
-FSM_MODES = {0: "零力矩", 1: "阻尼", 4: "锁定站立", 811: "走跑运控"}
+FSM_MODES = {0: "zero torque", 1: "damping", 4: "locked stand", 811: "walk-run"}
 
 
 def finite(value, name):
     value = float(value)
     if not math.isfinite(value):
-        raise ValueError(f"{name} 必须是有限数值")
+        raise ValueError(f"{name} must be a finite number")
     return value
 
 
@@ -66,14 +66,14 @@ class ArmController:
         self.max_acceleration = finite(config.get("max_acceleration_rad_s2", 0.5), "max_acceleration_rad_s2")
         self.max_jerk = finite(config.get("max_jerk_rad_s3", 2.0), "max_jerk_rad_s3")
         if self.max_acceleration <= 0 or self.max_jerk <= 0:
-            raise ValueError("机械臂加速度和 jerk 上限必须为正数")
+            raise ValueError("arm acceleration and jerk limits must be positive")
         tree = ET.parse(ROOT / "urdf/R1.urdf")
         self.limits = {}
         self.velocity_limits = {}
         for name in JOINTS:
             limit = tree.find(f"./joint[@name='{name}']/limit")
             if limit is None:
-                raise ValueError(f"URDF 缺少关节限位：{name}")
+                raise ValueError(f"URDF joint limit is missing: {name}")
             self.limits[name] = (float(limit.attrib["lower"]), float(limit.attrib["upper"]))
             self.velocity_limits[name] = float(limit.attrib["velocity"])
         ChannelFactoryInitialize(0, str(config.get("network_interface", "eth10")))
@@ -121,19 +121,19 @@ class ArmController:
         with self.lock:
             now = time.monotonic()
             if self.low is None or now - self.low_stamp > 0.3:
-                raise RuntimeError("R1 关节反馈已超过 0.3 秒未更新")
+                raise RuntimeError("R1 joint feedback has not updated for 0.3 seconds")
             low = self.low
             if moving:
                 if any(low["mode"][i] == 0 or low["error"][i] != 0 for i in CONTROLLED):
-                    raise RuntimeError("R1 上肢关节未就绪或存在错误")
+                    raise RuntimeError("an R1 upper-body joint is not ready or reports an error")
                 if any(not math.isfinite(low["q"][i]) for i in CONTROLLED):
-                    raise RuntimeError("R1 关节位置包含无效数值")
+                    raise RuntimeError("an R1 joint position is not finite")
             return low
 
     def fsm(self):
         code, data = self.client._Call(7001, "{}")
         if code != 0:
-            raise RuntimeError(f"GetFsmId 查询失败：{code}")
+            raise RuntimeError(f"GetFsmId query failed: {code}")
         return int(json.loads(data)["data"])
 
     def move(self, name, target, speed=0.05, active=lambda: True):
@@ -146,34 +146,34 @@ class ArmController:
     def _validate_targets(self, names, targets, speeds):
         names = list(names)
         if not names or len(set(names)) != len(names) or len(targets) != len(names):
-            raise ValueError("name 必须非空且不能重复，position 长度必须与 name 相同")
+            raise ValueError("name must be non-empty and unique, and position must have the same length as name")
         if speeds and len(speeds) != len(names):
-            raise ValueError("velocity 必须为空或与 name 长度相同")
+            raise ValueError("velocity must be empty or have the same length as name")
         targets = [finite(value, "position") for value in targets]
         speeds = [finite(value, "velocity") for value in speeds] if speeds else [0.05] * len(names)
         for name, target, speed in zip(names, targets, speeds):
             if name not in JOINTS:
-                raise ValueError(f"未知机械臂关节：{name}")
+                raise ValueError(f"unknown arm joint: {name}")
             if not 0 < speed <= self.velocity_limits[name]:
-                raise ValueError(f"速度必须在 (0, {self.velocity_limits[name]}] rad/s，依据官方 URDF")
+                raise ValueError(f"speed must be in (0, {self.velocity_limits[name]}] rad/s, from the official URDF")
             if not self.limits[name][0] <= target <= self.limits[name][1]:
-                raise ValueError(f"目标超过 URDF 限位：{name}")
+                raise ValueError(f"target exceeds the URDF limit: {name}")
         return names, targets, speeds
 
     @contextmanager
     def _motion(self, active):
         if not self.motion_lock.acquire(blocking=False):
-            raise RuntimeError("机械臂正在执行其他指令")
+            raise RuntimeError("the arm is already running another command")
         publisher = None
         try:
             mode = self.fsm()
             if mode != 811:
-                raise RuntimeError(f"当前 FSM {mode}（{FSM_MODES.get(mode, '未知模式')}），"
-                                   "机械臂运动需要通过官方遥控器或 App 进入走跑运控 811")
+                raise RuntimeError(f"current FSM {mode} ({FSM_MODES.get(mode, 'unknown mode')}),"
+                                   "arm motion requires walk-run mode 811, selected with the official remote or app")
             low = self.snapshot(moving=True)
             with self.lock:
                 if self.arm_weight > 0 and time.monotonic() - self.arm_stamp < 0.5:
-                    raise RuntimeError("rt/arm_sdk 已被其他控制程序占用")
+                    raise RuntimeError("rt/arm_sdk is already owned by another controller")
             command = make_command(low)
             publisher = ChannelPublisher("rt/arm_sdk", LowCmd_)
             publisher.Init()
@@ -202,7 +202,7 @@ class ArmController:
                 feedback = [dict(joint_name=name, start_rad=start, target_rad=target,
                                  measured_rad=value, error_rad=error, actual_change_rad=value - start)
                     for name, start, target, value, error in zip(names, starts, targets, measured, errors)]
-                raise RuntimeError("关节未到达目标：" + json.dumps(feedback, ensure_ascii=False))
+                raise RuntimeError("joint did not reach the target: " + json.dumps(feedback, ensure_ascii=False))
             motion.wait_until(min(deadline, time.monotonic() + 0.01))
         for index, target in zip(indices, targets):
             motion.positions[index] = target
@@ -210,7 +210,7 @@ class ArmController:
                   "measured_rad": measured, "error_rad": errors,
                   "actual_change_rad": [value - start for value, start in zip(measured, starts)],
                   "duration_s": time.monotonic() - began}
-        print("[r1_arm] 到位反馈 " + json.dumps(result, ensure_ascii=False), flush=True)
+        print("[r1_arm] settle feedback " + json.dumps(result, ensure_ascii=False), flush=True)
         return result
 
     def move_joints(self, names, targets, speeds=(), active=lambda: True):
@@ -238,14 +238,14 @@ class ArmController:
         began = time.monotonic()
         while time.monotonic() - began < 1.0:
             if not publisher.Write(command):
-                raise RuntimeError("arm_sdk 最终释放消息发布失败")
+                raise RuntimeError("failed to publish the final arm_sdk release message")
             time.sleep(0.02)
             with self.lock:
                 confirmed = self.arm_weight == 0 and self.arm_stamp >= began
             if confirmed and time.monotonic() - began >= 0.1:
-                print("[r1_arm] 已确认 arm_sdk 控制权重为 0", flush=True)
+                print("[r1_arm] confirmed arm_sdk control weight is 0", flush=True)
                 return
-        raise RuntimeError("arm_sdk 零权重消息未获得 DDS 订阅确认")
+        raise RuntimeError("the arm_sdk zero-weight message was not acknowledged by a DDS subscriber")
 
     def close(self):
         self.stop.set()

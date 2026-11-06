@@ -34,7 +34,7 @@ def connect(leaf):
         with grpc.insecure_channel(connection.endpoint.removeprefix("http://")) as channel:
             with channel_lock:
                 if stopping.is_set():
-                    raise RuntimeError("机械臂位姿接口已关闭")
+                    raise RuntimeError("the arm pose interface is shut down")
                 channels.add(channel)
             try:
                 yield channel
@@ -45,7 +45,7 @@ def connect(leaf):
 
 def positions(message):
     if len(message.name) != len(message.position) or len(set(message.name)) != len(message.name):
-        raise ValueError("关节反馈的名称与位置长度不一致或名称重复")
+        raise ValueError("joint feedback names and positions differ in length, or a name is repeated")
     return dict(zip(message.name, message.position))
 
 
@@ -76,13 +76,13 @@ def read_pose():
 
 def execute_pose(target, velocity, context=None):
     if not math.isfinite(velocity) or velocity <= 0:
-        raise ValueError("speed_rad_s 必须是有限正数")
+        raise ValueError("speed_rad_s must be a finite positive number")
     values, position_error, orientation_error = model.solve(
         [target.position.x, target.position.y, target.position.z],
         [target.orientation.x, target.orientation.y, target.orientation.z, target.orientation.w],
         read_positions())
     if stopping.is_set() or (context is not None and not context.is_active()):
-        raise RuntimeError("机械臂位姿指令已取消")
+        raise RuntimeError("the arm pose command was cancelled")
     command = sensor_msgs_pb2.JointState(name=model.names, position=values, velocity=[velocity] * 5)
     with connect("joint_command") as channel:
         call = services.RobonixPrimitiveArmJointCommandStub(channel).JointCommand.future(iter([command]))
@@ -119,7 +119,7 @@ def pos_command(requests, context):
         current = None
         for target in requests:
             if stopping.is_set() or not context.is_active():
-                raise RuntimeError("机械臂位姿指令已取消")
+                raise RuntimeError("the arm pose command was cancelled")
             if current is None:
                 current = read_positions()
             try:
@@ -148,7 +148,7 @@ def pos_command(requests, context):
 
 @provider.mcp("robonix/primitive/arm/get_end_pose")
 def get_end_pose(_request: GetEndPose_Request) -> GetEndPose_Response:
-    """读取腕部相对于 waist_yaw_link 的位姿，position 单位米，四元数顺序 x,y,z,w。"""
+    """Read the wrist pose relative to waist_yaw_link. Position is in metres and the quaternion order is x,y,z,w."""
     return GetEndPose_Response(json=json.dumps(read_pose(), ensure_ascii=False))
 
 
@@ -167,7 +167,7 @@ def move_request(request, context=None):
 
 @provider.mcp("robonix/primitive/arm/move_pose")
 def move_pose(request: MovePose_Request) -> MovePose_Response:
-    """移动当前 provider 对应腕部至 waist_yaw_link 中的绝对位姿，需要 FSM 811（走跑运控）。"""
+    """Move this provider's wrist to an absolute pose in waist_yaw_link. Requires FSM 811 (walk-run)."""
     return MovePose_Response(json=json.dumps(move_request(request), ensure_ascii=False))
 
 
@@ -189,7 +189,7 @@ def init(config):
     joint_provider = str(config.get("joint_provider_id", "r1_arm"))
     speed = float(config.get("speed_rad_s", 0.05))
     if not joint_provider or not math.isfinite(speed) or speed <= 0:
-        raise ValueError("joint_provider_id 必须非空，speed_rad_s 必须是有限正数")
+        raise ValueError("joint_provider_id must be non-empty, and speed_rad_s must be a finite positive number")
     stopping.clear()
     return Ok()
 

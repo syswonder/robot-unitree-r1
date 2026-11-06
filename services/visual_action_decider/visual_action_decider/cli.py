@@ -19,12 +19,12 @@ def compare(args):
     config = settings(args.settings)
     paths = sorted(Path(args.samples).glob("*/sample.json"))
     if not paths:
-        raise ValueError("没有可读取的真实样本")
+        raise ValueError("there is no real sample to read")
     samples = [(path, load_sample(path)) for path in paths]
     if any(sample.source_kind != "r1_live" for _, sample in samples):
-        raise ValueError("R1 成对实验只接受 r1_live 样本")
+        raise ValueError("R1 paired experiments accept only r1_live samples")
     if len({sample.sample_id for _, sample in samples}) != len(samples):
-        raise ValueError("样本 ID 重复")
+        raise ValueError("sample IDs are not unique")
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=False)
     save_json(output / "config.json", config.model_dump(mode="json"))
@@ -56,7 +56,7 @@ def compare(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Jev MVP 真实图片采样、成对决策及评估")
+    parser = argparse.ArgumentParser(description="Jev MVP live image capture, paired decisions and evaluation")
     commands = parser.add_subparsers(dest="command", required=True)
     configure = commands.add_parser("configure")
     configure.add_argument("--manifest", required=True)
@@ -103,7 +103,7 @@ def main():
         print(value.model_dump_json(indent=2))
     elif args.command == "compare":
         if args.repeat_samples < 0:
-            raise ValueError("repeat-samples 不能为负数")
+            raise ValueError("repeat-samples cannot be negative")
         compare(args)
     elif args.command == "label":
         sample = load_sample(args.sample)

@@ -1,26 +1,15 @@
 # r1_health
 
-Read-only Unitree R1 health provider. It subscribes to `rt/lowstate` and
-`rt/lf/bmsstate` and exposes:
+Read-only Unitree R1 health provider. It subscribes to `rt/lowstate` and `rt/lf/bmsstate` and exposes:
 
 - `robonix/primitive/health/state`
 - `robonix/primitive/health/stream`
 
-Soma consumes the stream, maps the readings onto the `soma.yaml` component
-tree, and Vitals displays the battery, IMU, joints and body health. Joint
-names and lowstate indices follow the official R1 `R1JointIndex` and
-`joint_idx_in_idl` mapping from `unitree_sdk2`'s
-`example/r1/low_level/r1_ankle_swing_example.cpp`.
+Soma consumes the stream, maps the readings onto the `soma.yaml` component tree, and Vitals displays the battery, IMU, joints and body health. Joint names and lowstate indices follow the official R1 `R1JointIndex` and `joint_idx_in_idl` mapping from `unitree_sdk2`'s `example/r1/low_level/r1_ankle_swing_example.cpp`.
 
 The provider never sends a motion or low-level command.
 
-Battery communication handling: the R1 low-level firmware continues to
-publish `rt/lf/bmsstate` at ~10 Hz when the BMS data link is lost, but fills
-the payload with zeros. The provider treats "all pack voltages are zero" as a
-communication fault, keeps the last valid BMS sample for a 2 s grace period,
-and then reports `body/body/battery/online=0` plus
-`body/body/battery/error=1`. This avoids showing a false 0% SOC while the
-battery telemetry is timing out.
+Battery communication handling: the R1 low-level firmware continues to publish `rt/lf/bmsstate` at ~10 Hz when the BMS data link is lost, but fills the payload with zeros. The provider treats "all pack voltages are zero" as a communication fault, keeps the last valid BMS sample for a 2 s grace period, and then reports `body/body/battery/online=0` plus `body/body/battery/error=1`. This avoids showing a false 0% SOC while the battery telemetry is timing out.
 
 Configuration:
 
@@ -38,27 +27,15 @@ source ~/r1-robonix/env.sh
 cd ~/r1-robonix/robot-unitree-r1
 rbnx build -p primitives/r1_health --no-update-check
 ```
-## 配置与生命周期
 
-实例名称由 `RBNX_INSTANCE_NAME` 指定，默认 `r1_health`。
-公开配置说明见 [config.spec](config.spec)。shutdown 关闭全部 DDS
-订阅并等待外设状态查询线程结束；重复 shutdown 不重复使用已关闭资源。
-重新初始化清空采样缓存，再接收真实设备数据。
+## Configuration and lifecycle
 
-`LowState` 由独立线程约每秒读取 100 次最新样本；BMS 独立接收。
-DDS writer 生命周期通知不作为状态样本。关闭时等待接收线程结束。
-健康数据的新鲜度和电池有效性检查继续使用 `stale_after_s`。
+The instance name comes from `RBNX_INSTANCE_NAME`, default `r1_health`. Public settings are in [config.spec](config.spec). Shutdown closes every DDS subscription and waits for the peripheral status thread. A second shutdown does not reuse a closed resource. Re-initialization clears the sample cache and then accepts live device data.
 
-## Client 外设状态
+`LowState` is read by its own thread at about 100 latest samples per second. BMS is received separately. A DDS writer lifecycle notice is not a state sample. Shutdown waits for the receiver threads. Freshness and battery validity still use `stale_after_s`.
 
-健康数据包含 `body/body/front_camera`、`body/body/depth_camera` 和
-`body/body/audio` 的 `online`、`communication_ok`、`error`。
-RGB 状态检查提供方是否 ACTIVE；深度状态同时通过标准 gRPC 接口
-读取实际 `32FC1` 帧并检查时间戳、尺寸和数据长度。
-音频状态要求麦克风、扬声器能力已注册且提供方 ACTIVE，并通过
-官方 `GetVolume()` 确认 voice 服务可以响应。查询不会播放声音；
-音频状态不代表麦克风当前正在产生 PCM 数据。
+## Client peripheral status
 
-外设查询每轮结束后等待两秒，深度与 voice 请求各有一秒超时。
-超过八秒未更新的查询结果按不可用处理。Soma/Vitals 根据这些
-数据更新 Client 中的组件状态，音频组件类型为 `audio_io`。
+Health data includes `online`, `communication_ok` and `error` for `body/body/front_camera`, `body/body/depth_camera` and `body/body/audio`. RGB status checks that the provider is ACTIVE. Depth status also reads a real `32FC1` frame over the standard gRPC interface and checks the stamp, size and data length. Audio status requires the microphone and speaker capabilities to be registered, the provider to be ACTIVE, and official `GetVolume()` to show that the voice service answers. The query does not play sound. Audio status does not mean the microphone is currently producing PCM.
+
+Each peripheral query waits two seconds after a round. Depth and voice requests time out after one second. A query result older than eight seconds is treated as unavailable. Soma and Vitals use these fields to update component status in the client. The audio component type is `audio_io`.

@@ -1,20 +1,20 @@
-# 参数由 Settings 校验；JSON/YAML 直接作为 Driver CMD_INIT 配置。
-model_revision: 必填，Decider Hugging Face snapshot 的 40 位 commit。
-data_dir: 必填，本服务样本、决策及 SQLite 任务记录的可写目录。
-decider_url: string，默认 http://127.0.0.1:18080，固定模型服务地址。
-encoder_url: string，默认 http://127.0.0.1:18081，须与 PC 的 JEV_ENCODER_URL 一致；描述请求经 Decider /mvp/encode 调度。
-camera_provider_id: string，默认 r1_camera。
-depth_provider_id: string，默认 r1_depth。
-state_provider_id: string，默认 r1_state。
-chassis_provider_id: string，默认 r1_chassis。
-capture_depth: bool，默认 true；启用时深度缺失直接报告采集失败。
-pipeline_timeout_s: float，默认 5，范围 (0,120]，完整 PC 请求共同期限，单位秒。
-capture_timeout_s: float，默认 3，范围 (0,30]，每个传感器等待上限，单位秒。
-decision_age_limit_s: float，默认 8，范围 (0,30]，运动前图片年龄上限，单位秒。
-control_rate_hz: float，默认 20，范围 [10,50]，本地速度输出频率。
-motion_enabled: bool，默认 false；true 允许 run_step，须符合现场测试范围。
-turning_verified: bool，默认 false；true 将已经验收的左右转向加入现场候选。
-forward_speed: float，默认 0.3，范围 (0,0.4]，前向速度，单位 m/s。
-forward_duration_s: float，默认 5，范围 (0,5]，前进持续时间，单位秒。
-turn_speed: float，默认 0.2，范围 (0,0.5]，转向角速度模长，单位 rad/s。
-turn_duration_s: float，默认 2，范围 (0,5]，转向持续时间，单位秒。
+# Settings are checked by Settings. JSON or YAML is sent as Driver CMD_INIT config.
+model_revision: required, 40-character commit of the Decider Hugging Face snapshot.
+data_dir: required writable directory for samples, decisions and the SQLite task record.
+decider_url: string, default http://127.0.0.1:18080, fixed model service address.
+encoder_url: string, default http://127.0.0.1:18081. It must match JEV_ENCODER_URL on the PC. Description requests are scheduled through Decider /mvp/encode.
+camera_provider_id: string, default r1_camera.
+depth_provider_id: string, default r1_depth.
+state_provider_id: string, default r1_state.
+chassis_provider_id: string, default r1_chassis.
+capture_depth: bool, default true. When enabled, a missing depth frame is a capture failure.
+pipeline_timeout_s: float, default 5, range (0,120], shared deadline in seconds for one full PC request.
+capture_timeout_s: float, default 3, range (0,30], per-sensor wait limit in seconds.
+decision_age_limit_s: float, default 8, range (0,30], maximum image age in seconds before motion.
+control_rate_hz: float, default 20, range [10,50], local velocity output rate.
+motion_enabled: bool, default false. true allows run_step and must stay inside the on-robot test range.
+turning_verified: bool, default false. true adds accepted left and right turns to the live candidates.
+forward_speed: float, default 0.3, range (0,0.4], forward speed in m/s.
+forward_duration_s: float, default 5, range (0,5], forward duration in seconds.
+turn_speed: float, default 0.2, range (0,0.5], turn-rate magnitude in rad/s.
+turn_duration_s: float, default 2, range (0,5], turn duration in seconds.

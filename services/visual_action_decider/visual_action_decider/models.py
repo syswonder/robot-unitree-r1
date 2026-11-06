@@ -67,7 +67,7 @@ class Sample(Model):
     @model_validator(mode="after")
     def regions(self):
         if tuple(image.region for image in self.images) != REGIONS:
-            raise ValueError("图片必须依次包含 full、left、center、right")
+            raise ValueError("images must be full, left, center and right, in that order")
         return self
 
 
@@ -84,9 +84,9 @@ class Label(Model):
     @model_validator(mode="after")
     def actions(self):
         if len(set(self.allowed_actions)) != len(self.allowed_actions):
-            raise ValueError("允许动作不能重复")
+            raise ValueError("allowed actions must be unique")
         if self.requires_stop and self.allowed_actions != [Action.STOP]:
-            raise ValueError("要求停止的标签只能允许 STOP")
+            raise ValueError("a label that requires stop may allow only STOP")
         return self
 
 
@@ -100,7 +100,7 @@ class Asset(Model):
     def digest(self):
         data = base64.b64decode(self.data_base64, validate=True)
         if hashlib.sha256(data).hexdigest() != self.sha256:
-            raise ValueError("图像校验失败")
+            raise ValueError("image checksum failed")
         return self
 
 
@@ -112,7 +112,7 @@ class EncodeRequest(Model):
     @model_validator(mode="after")
     def regions(self):
         if tuple(self.images) != REGIONS:
-            raise ValueError("图片区域及顺序不完整")
+            raise ValueError("image regions are incomplete or out of order")
         return self
 
 
@@ -152,11 +152,11 @@ class Decision(Model):
     def distribution(self):
         values = self.probabilities
         if not values or any(not math.isfinite(v) or v < 0 or v > 1 for v in values.values()):
-            raise ValueError("候选概率无效")
+            raise ValueError("candidate probabilities are invalid")
         if abs(sum(values.values()) - 1) > 0.001:
-            raise ValueError("候选概率总和无效")
+            raise ValueError("the candidate probability total is invalid")
         if self.selected_action not in values or values[self.selected_action] < max(values.values()):
-            raise ValueError("选中动作与概率不一致")
+            raise ValueError("the selected action does not match the probabilities")
         return self
 
 
@@ -183,5 +183,5 @@ class Settings(Model):
 
     def live_actions(self):
         if not self.motion_enabled:
-            raise RuntimeError("当前部署仅启用 evaluate；运动配置尚未启用")
+            raise RuntimeError("this deployment enables evaluate only; motion is not enabled")
         return list(Action) if self.turning_verified else [Action.FORWARD, Action.STOP]

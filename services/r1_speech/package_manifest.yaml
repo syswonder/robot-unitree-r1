@@ -2,10 +2,10 @@ manifestVersion: 1
 package:
   name: robonix.service.unitree.r1_speech
   version: 0.1.0
-  description: R1 本机中文流式 ASR、中文及英文 TTS 和唤醒检测。
+  description: Onboard R1 streaming Chinese ASR, Chinese and English TTS, and wake-word detection.
   tags: [service, unitree, r1, speech]
   maintainers:
-    - 张振宇 <768726812@qq.com>
+    - Zhenyu Zhang <768726812@qq.com>
   license: Apache-2.0 AND MulanPSL-2.0
 build: bash scripts/build.sh
 start: bash scripts/start.sh

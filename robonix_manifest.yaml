@@ -1,17 +1,18 @@
-# Unitree R1 EDU 整机部署。行走和双臂使用官方运控；机器人网络接口为 eth10。
-# 这是软件包目录索引的根清单，目录名为 robonix.robot.unitree.r1。
-# 路径依赖 ROBONIX_DEPLOY_DIR，由 scripts/env.sh 在启动前导出。
+# Onboard Unitree R1 EDU deployment. Walking and both arms use the official
+# sport controller. The robot network interface is eth10.
+# The package catalog indexes this file as robonix.robot.unitree.r1.
+# Paths expand ROBONIX_DEPLOY_DIR, exported by scripts/env.sh before boot.
 manifestVersion: 1
 name: r1-native
 
 catalog:
   name: robonix.robot.unitree.r1
   version: 0.1.0
-  description: "Unitree R1 EDU 本机部署：本体描述、状态与感知，以及基于官方运控的行走和双臂控制。"
+  description: "Onboard Unitree R1 EDU deployment with body description, state, perception, and walking plus dual-arm control through the official sport mode."
   license: Apache-2.0 AND BSD-3-Clause
   tags: [robot, deploy, unitree, r1, humanoid]
   maintainers:
-    - 张振宇 <768726812@qq.com>
+    - Zhenyu Zhang <768726812@qq.com>
 
 env:
   LOG: "INFO"
@@ -152,5 +153,5 @@ service:
       speech_tts_backend_class: r1_speech.backends:SherpaTTSBackend
       default_speaker_provider_id: r1_audio
       wake_word_model_dir: ${ROBONIX_DEPLOY_DIR}/services/r1_speech/rbnx-build/models/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20
-      wake_words: [罗伯特]
+      wake_words: ["罗伯特"]  # i18n-ok: spoken wake word detected by the onboard KWS model
 skill: []

@@ -1,4 +1,5 @@
-# 工作站只读配置：状态、健康和相机走 enp131s0。不是软件包目录索引的清单。
+# Workstation read-only profile: state, health and camera on enp131s0.
+# The package catalog does not index this file.
 manifestVersion: 1
 name: r1-pc-readonly
 

@@ -2,10 +2,10 @@ manifestVersion: 1
 package:
   name: robonix.service.unitree.visual_action_decider
   version: 0.1.0
-  description: R1 图片与视觉描述决策、一次动作执行及成对实验。
+  description: R1 image and visual-description decisions, one action execution, and paired experiments.
   tags: [service, unitree, r1, vision]
   maintainers:
-    - 张振宇 <768726812@qq.com>
+    - Zhenyu Zhang <768726812@qq.com>
   license: Apache-2.0
 build: bash scripts/build.sh
 start: bash scripts/start.sh

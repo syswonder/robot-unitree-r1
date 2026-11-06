@@ -1,33 +1,33 @@
 specVersion: 1
-description: R1 Speech 使用核心 Speech 配置和本机 Sherpa-ONNX 模型。
+description: R1 Speech uses the core Speech settings and the onboard Sherpa-ONNX models.
 properties:
   speech_backend:
     type: string
     default: custom
     enum: [custom]
-    description: 使用本包实现的 ASR/TTS 后端。
+    description: ASR/TTS backends implemented by this package.
   speech_asr_backend_class:
     type: string
     default: r1_speech.backends:SherpaASRBackend
-    description: 单次识别后端，输入为核心 Speech 转换后的 16 kHz PCM。
+    description: One-shot recognition backend. Input is 16 kHz PCM converted by core Speech.
   speech_asr_stream_backend_class:
     type: string
     default: r1_speech.backends:SherpaASRBackend
-    description: 中文增量识别后端，输出交给 Liaison。
+    description: Incremental Chinese recognition backend. Output goes to Liaison.
   speech_tts_backend_class:
     type: string
     default: r1_speech.backends:SherpaTTSBackend
-    description: 中文及词典英文合成后端，输出 16 kHz PCM。
+    description: Chinese and lexicon-English synthesis backend. Output is 16 kHz PCM.
   default_speaker_provider_id:
     type: string
     default: r1_audio
-    description: speech/speak 的默认扬声器提供方。
+    description: Default speaker provider for speech/speak.
   wake_word_model_dir:
     type: string
-    description: 本包 rbnx-build/models 内的官方 KWS 模型绝对路径。
+    description: Absolute path of the official KWS model inside this package's rbnx-build/models.
   wake_words:
     type: array
     items:
       type: string
-    default: [罗伯特]
-    description: Robonix 免提唤醒词，通过核心 Speech KWS 模型检测。
+    default: ["罗伯特"]  # i18n-ok: spoken wake word detected by the onboard KWS model
+    description: Hands-free Robonix wake phrase, detected by the core Speech KWS model.

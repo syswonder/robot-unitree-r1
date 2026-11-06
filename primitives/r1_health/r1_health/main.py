@@ -207,7 +207,7 @@ def _audio_available():
 
 
 def _watch_peripherals() -> None:
-    """独立查询外设状态，深度检查读取实际图像，音频检查仅查询音量。"""
+    """Query peripheral status separately. The depth check reads a real image. The audio check only queries volume."""
     global _peripheral_ts
     while not _stop.is_set():
         online = {
@@ -437,7 +437,7 @@ def init(cfg: dict):
 
 @r1_health.on_shutdown
 def shutdown():
-    """停止状态查询线程并关闭 DDS 订阅。"""
+    """Stop the status thread and close the DDS subscriptions."""
     global _peripheral_thread, _voice_client, _low_thread
     _stop.set()
     if _low_thread is not None:

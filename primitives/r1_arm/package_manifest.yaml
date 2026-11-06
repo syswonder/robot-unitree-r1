@@ -2,10 +2,10 @@ manifestVersion: 1
 package:
   name: robonix.primitive.unitree.r1_arm
   version: 0.1.0
-  description: R1 双臂关节反馈、单关节及多关节同步运动。
+  description: R1 dual-arm joint feedback, plus single-joint and synchronized multi-joint motion.
   tags: [primitive, unitree, r1, arm]
   maintainers:
-    - 张振宇 <768726812@qq.com>
+    - Zhenyu Zhang <768726812@qq.com>
   license: Apache-2.0 AND BSD-3-Clause
 build: bash scripts/build.sh
 start: bash scripts/start.sh

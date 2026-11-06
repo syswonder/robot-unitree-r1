@@ -95,7 +95,7 @@ def write_report(results_path, output, labels_path=None):
             label = Label.model_validate(raw)
             key = str(label.sample_id)
             if key in labels:
-                raise ValueError("同一样本存在重复标签")
+                raise ValueError("the same sample has duplicate labels")
             labels[key] = label
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
@@ -109,9 +109,9 @@ def write_report(results_path, output, labels_path=None):
             writer.writerow({**{field: row.get(field, "") for field in fields},
                              "selected_action": row.get("decision", {}).get("selected_action", "")})
     with (output / "report.md").open("x", encoding="utf-8") as stream:
-        stream.write("# Jev 成对实验结果\n\n")
-        stream.write("标签缺少时，正确率及概率校准指标保留为空。详细结果见 samples.csv 和 summary.json。\n\n")
-        stream.write("| 流程 | 请求数 | 有效数 | 正确率 | P50 ms | P95 ms |\n| --- | --- | --- | --- | --- | --- |\n")
+        stream.write("# Jev paired-experiment results\n\n")
+        stream.write("Accuracy and probability-calibration metrics stay empty when labels are missing. Details are in samples.csv and summary.json.\n\n")
+        stream.write("| Pipeline | Requests | Valid | Accuracy | P50 ms | P95 ms |\n| --- | --- | --- | --- | --- | --- |\n")
         for pipeline in Pipeline:
             row = summary[pipeline.value]
             stream.write(f"| {pipeline.value} | {row['requests']} | {row['valid']} | {row['accuracy']} | {row['latency_ms']['p50']} | {row['latency_ms']['p95']} |\n")

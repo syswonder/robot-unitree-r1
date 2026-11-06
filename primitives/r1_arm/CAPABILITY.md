@@ -1,44 +1,17 @@
 ---
-description: R1 双臂关节反馈、单关节及多关节同步运动，使用官方运控模式。
+description: R1 dual-arm joint feedback, plus single-joint and synchronized multi-joint motion, using the official sport mode.
 ---
 
-使用 `robonix/primitive/arm/move_joint` 执行单关节指令。
-`joint_name` 必须使用以下完整 URDF 名称：
+Use `robonix/primitive/arm/move_joint` for one joint.
+`joint_name` must be one of these URDF names:
 
-- 左臂：`left_shoulder_pitch_joint`、`left_shoulder_roll_joint`、
-  `left_shoulder_yaw_joint`、`left_elbow_joint`、`left_wrist_roll_joint`。
-- 右臂：`right_shoulder_pitch_joint`、`right_shoulder_roll_joint`、
-  `right_shoulder_yaw_joint`、`right_elbow_joint`、`right_wrist_roll_joint`。
+- Left arm: `left_shoulder_pitch_joint`, `left_shoulder_roll_joint`, `left_shoulder_yaw_joint`, `left_elbow_joint`, `left_wrist_roll_joint`.
+- Right arm: `right_shoulder_pitch_joint`, `right_shoulder_roll_joint`, `right_shoulder_yaw_joint`, `right_elbow_joint`, `right_wrist_roll_joint`.
 
-`target_rad` 是绝对关节角度，单位 rad。必须通过 `get_joint_states` 读取当前
-位置，或使用操作者给出的明确绝对角度；不得猜测当前位置。`speed_rad_s`
-必须显式提供，默认使用 0.05 rad/s。角度和速度必须满足官方 URDF 限制，
-可通过 `get_joint_states` 读取。`move_joint` 一次接受一个关节；标准
-`joint_command` 接受多个具名位置及同长度速度上限，拒绝 effort。
+`target_rad` is an absolute joint angle in radians. Read the current position with `get_joint_states`, or use an absolute angle the operator stated. Do not guess the current position. `speed_rad_s` must be set explicitly; 0.05 rad/s is the usual value. Angle and speed must stay inside the official URDF limits, which `get_joint_states` also returns. `move_joint` accepts one joint. The standard `joint_command` accepts several named positions and a velocity limit of the same length, and rejects effort.
 
-通过对话同时移动多个关节时，调用 `robonix/primitive/arm/move_joints`，
-能力目录名称为 `r1_arm.arm_move_joints`。一次请求中同时提供
-`joint_names`、`target_rad`、`speed_rad_s` 三个等长数组；名称非空且
-不能重复。目标为绝对角度，速度为每个关节的正数上限，可在同一次
-调用中包含左右双臂。使用 `get_joint_states` 读取当前位置和限位后
-计算目标。全部目标共用五次轨迹的时间进度，并在同一 DDS 消息中发布，
-统一接管和释放。返回的 `joint_name`、`start_rad`、`target_rad`、
-`measured_rad`、`error_rad`、`actual_change_rad` 均为对应顺序的数组。
-结果的 `duration_s` 为整组关节共同的轨迹和到位等待用时。
+To move several joints from one dialogue turn, call `robonix/primitive/arm/move_joints`. Its catalog name is `r1_arm.arm_move_joints`. One request supplies three equal-length arrays: `joint_names`, `target_rad` and `speed_rad_s`. Names are non-empty and unique. Targets are absolute angles. Speeds are positive per-joint limits. One call may include both arms. Read the current pose and limits with `get_joint_states` before computing targets. Every target shares one quintic time base and is published in the same DDS message, with one take-over and one release. The result arrays `joint_name`, `start_rad`, `target_rad`, `measured_rad`, `error_rad` and `actual_change_rad` keep that order. `duration_s` is the shared trajectory and settle time.
 
-官方模式包括：0 零力矩、1 阻尼、4 锁定站立、811 走跑运控。
-机械臂运动要求 FSM 811（走跑运控），由操作者通过官方遥控器或 App 切换。
-锁定站立用于保持站立姿态。调试模式会退出内置运控，高层服务不可用。
-`get_joint_states` 返回当前 FSM 和 `motion_fsm_ids`；模式不适用时报告当前模式。
+Official modes: 0 zero torque, 1 damping, 4 locked stand, 811 walk-run. Arm motion requires FSM 811, selected by the operator with the official remote or app. Locked stand holds a standing pose. Debug mode leaves the built-in controller, and the high-level services are then unavailable. `get_joint_states` returns the current FSM and `motion_fsm_ids`. A wrong mode is reported as the current mode.
 
-每次动作包含控制权渐入、五次平滑插值、反馈验证和控制权渐出。
-位置与速度前馈按 100 Hz 发布，起点和终点速度、加速度为零；轨迹
-满足请求速度上限及部署的加速度、jerk 上限。
-连续目标可通过同一 `joint_command` 流发送，整个流统一接管与释放。
-独立 `move_joint` 调用各自完成接管、运动和释放。成功结果
-包含运动期间的实测角度，动作完成后由 R1 内置控制器接管，姿态可能恢复。
-执行失败时停止当前任务并向操作者报告错误，不重复尝试运动。
-`measured_rad` 才是实测角度，`error_rad` 是实测角度减去目标角度，
-`actual_change_rad` 是实测角度减去起点角度。必须按字段名称解释结果，
-执行失败且没有足够实际变化时，不得宣称机械臂已经移动。
-左右腕部位姿目标由 `r1_left_arm` 和 `r1_right_arm` 提供。
+Each motion ramps control in, runs a quintic interpolation, checks feedback, and ramps control out. Position and velocity feedforward are published at 100 Hz. Start and end velocity and acceleration are zero. The trajectory respects the requested speed and the deployment acceleration and jerk limits. Consecutive targets may share one `joint_command` stream, which takes and releases control once. A standalone `move_joint` call takes, moves and releases on its own. A success result includes the measured angle during the motion. After the call, the built-in controller owns the arms again and the pose may return. On failure, stop and report the error. Do not retry the motion. `measured_rad` is the measured angle, `error_rad` is measured minus target, and `actual_change_rad` is measured minus start. Interpret the fields by name. Do not claim the arm moved when execution failed and the measured change is too small. Wrist pose goals are provided by `r1_left_arm` and `r1_right_arm`.

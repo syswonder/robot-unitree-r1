@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 选择 Pilot 使用的模型。密钥和上游地址来自环境或本机配置，不写进仓库。
+# Select the model Pilot uses. Keys and the upstream address come from the environment or local config, not from this repository.
 
 load_vlm_profile() {
   local selected="${1:-}"

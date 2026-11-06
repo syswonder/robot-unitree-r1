@@ -1,89 +1,66 @@
-# R1 传感器几何配置
+# R1 sensor geometry
 
-RGB 与深度原语共同使用本库读取内参和静态安装外参。库通过 PyYAML
-解析标准文件，通过 NumPy 检查数值和旋转矩阵；由原语使用生成的
-CameraInfo、TransformStamped 消息对外提供数据。
+The RGB and depth primitives share this library to read intrinsics and a static mount extrinsic. The library parses the standard files with PyYAML and checks numbers and rotation matrices with NumPy. The primitives publish the resulting CameraInfo and TransformStamped messages.
 
-## 内参文件
+## Intrinsics file
 
-`calibration_file` 为 ROS camera_info YAML，需要以下字段：
+`calibration_file` is a ROS camera_info YAML with these fields:
 
-| 字段 | 格式和要求 |
+| Field | Format |
 | --- | --- |
-| `image_width`、`image_height` | 实际标定分辨率，正整数 |
-| `distortion_model` | `plumb_bob`、`rational_polynomial` 或 `equidistant` |
-| `distortion_coefficients` | `rows=1`、`cols` 及数值列表 `data`；plumb_bob 支持 4/5 个、rational_polynomial 为 8 个、equidistant 为 4 个 |
-| `camera_matrix` | `rows=3`、`cols=3`、九个行优先数值 |
-| `rectification_matrix` | 3×3 旋转矩阵，正交且行列式为 1 |
-| `projection_matrix` | `rows=3`、`cols=4`、十二个行优先数值 |
+| `image_width`, `image_height` | Positive integers, the resolution that was calibrated |
+| `distortion_model` | `plumb_bob`, `rational_polynomial` or `equidistant` |
+| `distortion_coefficients` | `rows=1`, `cols`, and a numeric `data` list. plumb_bob allows 4 or 5 values, rational_polynomial 8, equidistant 4 |
+| `camera_matrix` | `rows=3`, `cols=3`, nine row-major numbers |
+| `rectification_matrix` | 3x3 rotation matrix, orthogonal with determinant 1 |
+| `projection_matrix` | `rows=3`, `cols=4`, twelve row-major numbers |
 
-K/P 焦距必须为正，所有数值必须有限，最后一行遵循标准针孔模型。
-文件必须对应原语实际输出的旋转、裁剪和分辨率。内参接口不自动改变
-标定尺寸或推导缺少的参数。深度使用对应深度成像网格的独立标定。
+K/P focal lengths must be positive. Every value must be finite. The last row follows the standard pinhole model. The file must match the rotation, crop and resolution the primitive actually outputs. The intrinsics interface does not resize a calibration or invent missing parameters. Depth uses its own calibration for the depth image grid.
 
-未设置内参文件时返回未标定 CameraInfo，K/R/P 为零。
-`tests/data/ros_camera_info.yaml` 是上游 ROS 格式参考数据，来源及许可证
-随文件保存；部署时使用本机设备的实测文件。
+When no intrinsics file is set, the returned CameraInfo is uncalibrated and K/R/P are zero. `tests/data/ros_camera_info.yaml` is an upstream ROS format sample. Its source and license are stored with the file. A deployment uses a measured file from this robot.
 
-## 静态外参文件
+## Static extrinsics file
 
-`extrinsics_file` 使用标准 TransformStamped YAML 字段：
+`extrinsics_file` uses the standard TransformStamped YAML fields:
 
-| 字段 | 含义 |
+| Field | Meaning |
 | --- | --- |
-| `header.frame_id` | 相机安装关系的 parent frame |
-| `child_frame_id` | 原语实际输出的光学 frame，必须与 `frame_id` 配置相同 |
-| `transform.translation.x/y/z` | child 原点在 parent 中的位置，单位米 |
-| `transform.rotation.x/y/z/w` | child 相对 parent 的归一化四元数 |
+| `header.frame_id` | Parent frame of the camera mount |
+| `child_frame_id` | Optical frame the primitive actually outputs. It must equal the configured `frame_id` |
+| `transform.translation.x/y/z` | Child origin in the parent frame, in metres |
+| `transform.rotation.x/y/z/w` | Normalized quaternion of the child relative to the parent |
 
-该变换将 child 坐标中的点表示到 parent 坐标，静态消息时间戳为零。
-每个 gRPC 订阅者立即取得当前配置；文件变更后需要重新初始化或重启原语。
-未提供实测外参时，接口报告 `FAILED_PRECONDITION`。
+The transform expresses a point in the child frame into the parent frame. The static message has a zero stamp. Each gRPC subscriber receives the current configuration immediately. After the file changes, re-initialize or restart the primitive. Without a measured extrinsic the interface reports `FAILED_PRECONDITION`.
 
-头部相机安装到头部 link 时，应以真实安装部件作为 parent；头部关节
-到 `base_link` 的运动关系需要 URDF、关节反馈及 TF。当前整机 URDF
-尚未增加实测相机 frame。
+When the head camera is mounted on a head link, that real link is the parent. Motion from the head joints to `base_link` needs the URDF, joint feedback and TF. The current robot URDF does not yet include a measured camera frame.
 
-## 配置检查
+## Configuration check
 
-`calibration_file` 与 `extrinsics_file` 的相对路径均以部署根目录为基准。
-在 R1 部署根目录使用已经构建的原语环境运行：
+Relative `calibration_file` and `extrinsics_file` paths are resolved from the deployment root. On the R1, use the built primitive environment:
 
 ```bash
 primitives/r1_depth/.venv/bin/python scripts/validate_camera_geometry.py --frame-id r1_depth_camera_optical_frame --width 544 --height 448 --calibration-file config/depth_camera_info.yaml --extrinsics-file config/depth_extrinsics.yaml
 ```
 
-此命令读取操作者已提供的实测文件。省略两个文件参数时输出
-`calibrated=false` 和 `extrinsics_available=false`。指定的文件不存在、
-格式错误、frame 不符或尺寸不符时，命令立即失败。
+The command reads measured files the operator has supplied. Omitting both file arguments prints `calibrated=false` and `extrinsics_available=false`. A missing file, a bad format, a frame mismatch or a size mismatch fails the command immediately.
 
-本库不采集图像，不发布动态 TF，不控制机器人。
+This library does not capture images, publish dynamic TF, or command the robot.
 
-## 本机检查记录
+## Local checks
 
-Python 3.10.22 环境下已通过十项检查，覆盖上游 ROS 标定格式、
-CameraInfo 序列化、未标定状态、尺寸冲突、非有限数值、矩阵结构、
-旋转矩阵、外参 frame 和四元数。参考数据来源及许可证见 `tests/data/`。
+Ten checks passed on Python 3.10.22: the upstream ROS calibration format, CameraInfo serialization, the uncalibrated state, a size conflict, non-finite values, matrix shape, the rotation matrix, the extrinsic frame and the quaternion. The reference source and license are in `tests/data/`.
 
-新增能力通过真实本机 Atlas/gRPC 注册检查。`r1_camera` 和 `r1_depth`
-均声明 `intrinsics`、`extrinsics`；缺少外参文件时返回
-`FAILED_PRECONDITION`。
+New capabilities were checked against the real onboard Atlas/gRPC registry. `r1_camera` and `r1_depth` both declare `intrinsics` and `extrinsics`. Without an extrinsic file they return `FAILED_PRECONDITION`.
 
-## 板端数据流检查
+## Onboard stream check
 
-2026-10-28 已完成 R1 原生构建和真实数据流检查：RGB 约 15 FPS，
-深度约 10.75 FPS，各取得七组与 CameraInfo 相同的帧时间戳。
-当前未提供实测内外参，两路 CameraInfo 均明确表示未标定。
+On 2026-10-28 the native R1 build and a live stream check completed. RGB was about 15 FPS and depth about 10.75 FPS. Each side produced seven frame stamps shared with CameraInfo. No measured intrinsics or extrinsics were supplied, and both CameraInfo messages reported uncalibrated.
 
-在部署根目录运行：
+From the deployment root:
 
 ```bash
 primitives/r1_camera/.venv/bin/python scripts/check_camera_geometry_contracts.py --expect-unconfigured
 primitives/r1_camera/.venv/bin/python scripts/check_camera_geometry_live.py --output .tools/camera-geometry/result.json
 ```
 
-数据流检查同时订阅两路图像和内参，检查标准编码、尺寸、数据长度、
-frame_id、时间戳与同帧关系，并保存图像频率及深度数值分布。
-结果文件必须尚不存在，每次验收使用新的文件名。
-深度数值分布检查不验证测距精度；RGB-D 配准、两路图像的时间同步和
-已知距离参照物检查仍需完成。
+The stream check subscribes to both images and intrinsics. It checks the standard encoding, size, data length, frame_id, stamps and same-frame pairing, and it saves the image rate and the depth value distribution. The result file must not already exist. Each acceptance run uses a new name. The depth distribution does not verify ranging accuracy. RGB-D registration, time alignment of the two images, and a check against a known distance still have to be done.

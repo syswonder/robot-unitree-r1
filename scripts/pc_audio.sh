@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 在 PC 桌面会话中运行，向 R1 提供 PC 麦克风和扬声器。
+# Run in a PC desktop session to provide the PC microphone and speaker to the R1.
 set -euo pipefail
 PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 R1_HOST="${R1_HOST:-unitree@192.168.123.164}"

@@ -1,19 +1,9 @@
 ---
-description: 单个 R1 机械臂的腕部位姿反馈和完整位姿目标，参考坐标系 waist_yaw_link。
+description: Wrist pose feedback and full pose goals for one R1 arm, in the waist_yaw_link frame.
 ---
 
-实例 `r1_left_arm` 对应 `left_wrist_roll_link`；实例 `r1_right_arm`
-对应 `right_wrist_roll_link`。调用 `get_end_pose` 获取当前位姿。
-`position_m` 为米，`quaternion_xyzw` 为 x,y,z,w 四元数。
+Instance `r1_left_arm` uses `left_wrist_roll_link`. Instance `r1_right_arm` uses `right_wrist_roll_link`. Call `get_end_pose` for the current pose. `position_m` is in metres. `quaternion_xyzw` is an x,y,z,w quaternion.
 
-`move_pose` 参数 `x,y,z` 为参考坐标系 `waist_yaw_link` 中的绝对位置，
-`qx,qy,qz,qw` 必须为归一化四元数，`speed_rad_s` 为关节速度上限。
-运动需要官方 FSM 811（走跑运控），并遵循官方 URDF 的角度及速度限制。
-五自由度机械臂仅接受完整位姿求解成功的目标；失败时报告错误，
-不得重复尝试运动或忽略目标姿态。没有工具安装变换及碰撞规划。
+`move_pose` arguments `x,y,z` are an absolute position in `waist_yaw_link`. `qx,qy,qz,qw` must be a normalized quaternion. `speed_rad_s` is the joint speed limit. Motion requires official FSM 811 (walk-run) and stays inside the official URDF angle and speed limits. The five-degree-of-freedom arm accepts only targets whose full pose solves. A failed solve is reported as an error. Do not retry the motion or drop the target orientation. There is no tool mount and no collision planner.
 
-实际执行使用五次同步关节插值和速度前馈，末端路径不保证直线。
-同一标准 `pos_command` 流统一接管与释放；独立 `move_pose` 调用各自
-执行完整动作。成功返回模型关节目标和
-IK 残差；这些残差描述模型求解结果。实际关节反馈由 `r1_arm` 检查，
-运动完成后释放控制权，内置控制器可能恢复姿态。
+Execution uses a synchronized quintic joint interpolation and velocity feedforward. The tip path is not promised to be straight. One standard `pos_command` stream takes and releases control once. A standalone `move_pose` call runs the full motion itself. Success returns the model joint targets and the IK residuals. Those residuals describe the solver, not the measured tip. `r1_arm` checks the joint feedback. Control is released after the motion, and the built-in controller may restore the pose.

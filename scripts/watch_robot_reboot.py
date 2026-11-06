@@ -66,7 +66,7 @@ class DepthReceiver:
         deadline = time.monotonic() + 3.0
         while self.running():
             if time.monotonic() >= deadline:
-                raise RuntimeError("官方深度接收进程未能退出")
+                raise RuntimeError("the official depth receiver process did not exit")
             if self.stopped.wait(0.1):
                 return
         if self.child is not None:

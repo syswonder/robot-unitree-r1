@@ -22,9 +22,9 @@ else
   echo "depth device: /dev/video-dep MISSING"
 fi
 if pgrep -f '[/]watch_robot_reboot.py --interface eth10' >/dev/null 2>&1; then
-  echo "机器人重启联动：运行中"
+  echo "robot reboot watch: running"
 else
-  echo "机器人重启联动：未运行"
+  echo "robot reboot watch: not running"
 fi
 
 echo "== providers"

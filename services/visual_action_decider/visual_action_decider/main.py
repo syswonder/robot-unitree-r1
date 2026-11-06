@@ -20,7 +20,7 @@ runtime = None
 
 def service():
     if runtime is None:
-        raise RuntimeError("视觉动作服务尚未初始化")
+        raise RuntimeError("the visual action service is not initialized")
     return runtime
 
 

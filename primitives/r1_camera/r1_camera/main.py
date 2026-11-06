@@ -104,7 +104,7 @@ def _gst_pipeline(port: int, rotate: str) -> list[str]:
 
 def _read_jpegs(stream) -> None:
     global _latest_jpeg, _latest_ts, _latest_stamp_ns
-    # FFmpeg 负责 MJPEG 分帧，Pillow 负责图像解码。
+    # FFmpeg splits MJPEG frames and Pillow decodes the image.
     with av.open(stream, format="mjpeg", buffer_size=4096,
                  options={"probesize": "32", "analyzeduration": "0"}) as container:
         for packet in container.demux(video=0):
@@ -159,18 +159,18 @@ def _current_frame():
     if _settings["source"] == "videohub":
         with _lock:
             if _client is None:
-                raise RuntimeError("r1_camera 尚未初始化")
+                raise RuntimeError("r1_camera is not initialized")
             code, data = _client.GetImageSample()
         if code != 0:
-            raise RuntimeError(f"videohub GetImageSample 返回 {code}")
+            raise RuntimeError(f"videohub GetImageSample returned {code}")
         return bytes(data), time.monotonic(), time.time_ns()
     with _lock:
         sample = _latest_jpeg, _latest_ts, _latest_stamp_ns
         error = _last_error
     if sample[0] is None or sample[1] is None:
-        raise RuntimeError(f"尚未收到 RGB 数据；请开启 Stereo patch PC1；{error}")
+        raise RuntimeError(f"no RGB data yet; enable Stereo patch PC1; {error}")
     if time.monotonic() - sample[1] > _settings["stale_after_s"]:
-        raise RuntimeError("RGB 数据已超时")
+        raise RuntimeError("RGB data has timed out")
     return sample
 
 
@@ -248,7 +248,7 @@ def extrinsics(_request, context):
     while context.is_active() and not _stop.is_set():
         mount = _mount
         if mount is None:
-            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "未配置实测 extrinsics_file")
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "no measured extrinsics_file is configured")
         if mount is not previous:
             yield mount.message()
             previous = mount
@@ -292,7 +292,7 @@ def init(cfg: dict):
         return Err("rotate must be none, clockwise, counterclockwise or rotate-180")
     frame_id = str(cfg.get("frame_id", "r1_front_camera_optical_frame")).strip()
     if not frame_id:
-        raise ValueError("frame_id 不得为空")
+        raise ValueError("frame_id must not be empty")
     calibration_file = str(cfg.get("calibration_file", "")).strip()
     extrinsics_file = str(cfg.get("extrinsics_file", "")).strip()
     _calibration, _mount = load_geometry(cfg, Path(__file__).resolve().parents[3], frame_id)
@@ -362,7 +362,7 @@ def shutdown():
     if _worker is not None:
         _worker.join(timeout=3)
         if _worker.is_alive():
-            raise RuntimeError("RGB 读取线程未退出")
+            raise RuntimeError("the RGB reader thread did not exit")
         _worker = None
     return Ok()
 

@@ -2,10 +2,10 @@ manifestVersion: 1
 package:
   name: robonix.primitive.unitree.r1_chassis
   version: 0.1.0
-  description: R1 官方高层运控的限时移动和连续速度输入。
+  description: Timed motion and continuous velocity input through the official R1 high-level sport controller.
   tags: [primitive, unitree, r1, chassis]
   maintainers:
-    - 张振宇 <768726812@qq.com>
+    - Zhenyu Zhang <768726812@qq.com>
   license: Apache-2.0 AND BSD-3-Clause
 build: bash scripts/build.sh
 start: bash scripts/start.sh

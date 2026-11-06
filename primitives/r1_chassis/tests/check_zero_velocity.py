@@ -30,7 +30,7 @@ def observe(message):
 def fsm(client):
     code, data = client._Call(7001, '{}')
     if code != 0:
-        raise RuntimeError(f'GetFsmId 查询失败：{code}')
+        raise RuntimeError(f'GetFsmId query failed: {code}')
     return json.loads(data)['data']
 
 

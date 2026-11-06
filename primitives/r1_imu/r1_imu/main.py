@@ -32,18 +32,18 @@ def receive(message):
 def to_message(sample):
     _, stamp_ns, quaternion, gyro, acceleration = sample
     if not all(math.isfinite(v) for values in (quaternion, gyro, acceleration) for v in values):
-        raise ValueError("IMU 包含非有限数值")
+        raise ValueError("the IMU sample contains a non-finite value")
     if sum(v * v for v in quaternion) == 0:
-        raise ValueError("IMU 四元数无效")
+        raise ValueError("the IMU quaternion is invalid")
     message = sensor_msgs_pb2.Imu()
     message.header.frame_id = settings["frame_id"]
     message.header.stamp.sec = stamp_ns // 1_000_000_000
     message.header.stamp.nanosec = stamp_ns % 1_000_000_000
-    # Unitree 的 w,x,y,z 顺序转换为 ROS 的 x,y,z,w 字段。
+    # Convert Unitree w,x,y,z order to the ROS x,y,z,w fields.
     message.orientation.w, message.orientation.x, message.orientation.y, message.orientation.z = quaternion
     message.angular_velocity.x, message.angular_velocity.y, message.angular_velocity.z = gyro
     message.linear_acceleration.x, message.linear_acceleration.y, message.linear_acceleration.z = acceleration
-    # 全零协方差表示设备未提供协方差，遵循 sensor_msgs/Imu 约定。
+    # All-zero covariance means the device did not provide one, following sensor_msgs/Imu.
     message.orientation_covariance.extend([0.0] * 9)
     message.angular_velocity_covariance.extend([0.0] * 9)
     message.linear_acceleration_covariance.extend([0.0] * 9)
@@ -63,10 +63,10 @@ def imu(_request, context):
         now = time.monotonic()
         if sample is None:
             if now - began > settings["stale_after_s"]:
-                context.abort(grpc.StatusCode.UNAVAILABLE, "尚未收到 R1 rt/lowstate IMU 数据")
+                context.abort(grpc.StatusCode.UNAVAILABLE, "no R1 rt/lowstate IMU sample has arrived")
             continue
         if now - sample[0] > settings["stale_after_s"]:
-            context.abort(grpc.StatusCode.UNAVAILABLE, "R1 IMU 数据已超时")
+            context.abort(grpc.StatusCode.UNAVAILABLE, "R1 IMU data has timed out")
         if sample is previous:
             continue
         previous = sample
@@ -80,7 +80,7 @@ def init(config):
     frame = str(config.get("frame_id", "imu_in_pelvis_link")).strip()
     stale = float(config.get("stale_after_s", 2.0))
     if not interface or not frame or not math.isfinite(stale) or stale <= 0:
-        raise ValueError("网络接口和 frame_id 必须非空，stale_after_s 必须为有限正数")
+        raise ValueError("the network interface and frame_id must be non-empty, and stale_after_s must be a finite positive number")
     settings.update(frame_id=frame, stale_after_s=stale)
     with changed:
         latest = None

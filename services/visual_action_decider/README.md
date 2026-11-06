@@ -1,14 +1,10 @@
-# R1 视觉动作决策服务
+# R1 visual action decider
 
-通过 Atlas 获取 R1 的 RGB、CameraInfo、深度和状态，将同一观察提交给
-PC Decider-4B。`direct_image` 使用原生图片，`visual_text` 使用 BLIP/RAM
-描述。模型返回左转、前进、右转、停止四项候选的概率。
+Reads R1 RGB, CameraInfo, depth and state through Atlas, and submits the same observation to the PC Decider-4B. `direct_image` uses the raw image. `visual_text` uses the BLIP/RAM description. The model returns probabilities for turn left, forward, turn right and stop.
 
-## 部署
+## Deployment
 
-R1 需要 Python 3.10、现有 Robonix API、相机和状态原语。板端不安装
-PyTorch 或模型权重。构建入口支持 `RBNX_OFFLINE_WHEELS` 指向现有
-离线 wheel 目录。公开配置见 `config.spec`，调用说明见 `CAPABILITY.md`。
+The R1 needs Python 3.10, the existing Robonix API, and the camera and state primitives. The robot does not install PyTorch or the model weights. The build accepts `RBNX_OFFLINE_WHEELS` pointing at the existing offline wheel directory. Public settings are in `config.spec`. Call instructions are in `CAPABILITY.md`.
 
 ```bash
 source ~/r1-robonix/scripts/env.sh
@@ -16,27 +12,19 @@ rbnx build -p "$DEPLOY/services/visual_action_decider"
 bash ~/r1-robonix/scripts/02_start.sh
 ```
 
-主清单已注册该服务。当前模型 revision 为
-`585473dec4fa93f0325c2bf02dda7273b61f44c1`，PC 端口 18080/18081
-通过反向隧道供 R1 访问。原始样本和决策记录保存在
-`~/r1-robonix/.work/jev-mvp-4b/`。
+The root manifest registers this service. The current model revision is `585473dec4fa93f0325c2bf02dda7273b61f44c1`. PC ports 18080 and 18081 are reached from the R1 through a reverse tunnel. Raw samples and decision records are stored under the configured `data_dir`.
 
-## 能力
+## Capabilities
 
-| 能力 | 行为 |
-|---|---|
-| `evaluate` | 获取实时观察或读取本服务归档样本，返回决策 |
-| `run_step` | 运动配置启用时，获取新观察并执行至多一个动作 |
-| `status` | 查询指定任务 |
-| `cancel` | 取消指定任务并清理已有运动输出 |
+| Capability | Behavior |
+| --- | --- |
+| `evaluate` | Take a live observation or read an archived sample from this service, and return a decision |
+| `run_step` | When motion is enabled, take a new observation and run at most one action |
+| `status` | Read one task |
+| `cancel` | Cancel one task and clear motion output already sent |
 
-四项能力均提供 MCP/gRPC；共享 Driver 负责生命周期。
-当前正式配置为 `motion_enabled=false`，允许通过 Client 对话进行
-实时 `evaluate`。运动关闭检查已通过，Jev 现场运动仍待验收。
+All four capabilities are available over MCP and gRPC. The shared Driver owns the lifecycle. The current production setting is `motion_enabled=false`, so a client dialogue can call live `evaluate`. The motion-disabled check has passed. On-robot Jev motion still needs acceptance.
 
-PC 顺序 GPU 调度在视觉描述期间暂存 4B 权重，所有推理仍使用 CUDA。
-当前只读配置的完整请求期限为六十秒，五秒性能目标单独记录。
-图像与深度尚未配准，模型概率不作为可通行距离或到达目标的证明。
+The PC GPU scheduler parks the 4B weights while a visual description runs. Inference still uses CUDA. The current read-only configuration allows sixty seconds for a full request. The five-second performance target is recorded separately. Image and depth are not registered. Model probabilities are not evidence of a free distance or of reaching a goal.
 
-PC 启动、同样本对比、标签和报告方法见项目
-`experiments/jev_mvp/README.md` 和 `docs/Jev_MVP实现计划.md`。
+PC startup, same-sample comparison, labels and the report method are in the project notes `experiments/jev_mvp/README.md` and `docs/Jev_MVP implementation plan`.

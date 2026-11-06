@@ -20,7 +20,7 @@ class Store:
             for run_id, payload in connection.execute("SELECT run_id,payload FROM tasks").fetchall():
                 record = json.loads(payload)
                 if record["state"] not in TERMINAL:
-                    record.update(state="FAILED", error_code="PROCESS_INTERRUPTED", error_message="服务重新启动，任务已终止")
+                    record.update(state="FAILED", error_code="PROCESS_INTERRUPTED", error_message="the service restarted and the task was stopped")
                     connection.execute("UPDATE tasks SET payload=? WHERE run_id=?", (json.dumps(record, ensure_ascii=False), run_id))
 
     @contextmanager
@@ -46,7 +46,7 @@ class Store:
         with self.lock, self.connect() as connection:
             row = connection.execute("SELECT payload FROM tasks WHERE run_id=?", (run_id,)).fetchone()
             if row is None:
-                raise ValueError("未知 run_id")
+                raise ValueError("unknown run_id")
             return json.loads(row[0])
 
     def update(self, run_id, **values):

@@ -24,7 +24,7 @@ def test_ros_reference_and_protobuf_roundtrip():
     assert decoded.width == 640 and decoded.height == 480
     assert decoded.header.stamp.sec * 1_000_000_000 + decoded.header.stamp.nanosec == stamp
     np.testing.assert_array_equal(decoded.r, calibration.r)
-    with pytest.raises(ValueError, match="标定尺寸"):
+    with pytest.raises(ValueError, match="calibration size"):
         camera_info(calibration, 480, 640, "reference_optical_frame", stamp)
 
 
@@ -79,7 +79,7 @@ def test_existing_urdf_fixed_transform(tmp_path):
         CameraMount.from_file(path, "another_optical_frame")
     document["transform"]["rotation"]["w"] = 2
     path.write_text(yaml.safe_dump(document))
-    with pytest.raises(ValueError, match="四元数"):
+    with pytest.raises(ValueError, match="quaternion"):
         CameraMount.from_file(path, document["child_frame_id"])
 
 

@@ -25,12 +25,12 @@ def load_sample(path):
     for record in sample.images:
         image_path = (path.parent / record.path).resolve()
         if not image_path.is_relative_to(path.parent.resolve()):
-            raise ValueError("图片路径超出样本目录")
+            raise ValueError("the image path escapes the sample directory")
         if hashlib.sha256(image_path.read_bytes()).hexdigest() != record.sha256:
-            raise ValueError(f"图片校验失败：{record.region}")
+            raise ValueError(f"image checksum failed: {record.region}")
         with Image.open(image_path) as image:
             if image.size != (record.width, record.height):
-                raise ValueError("图片尺寸与记录不一致")
+                raise ValueError("the image size does not match the record")
     return sample
 
 
@@ -42,7 +42,7 @@ def archive_rgb(root, image, scene_id, instruction, state, camera_info, source_s
     image = image.convert("RGB")
     width, height = image.size
     if width < 3 or height < 1:
-        raise ValueError("图片尺寸不足")
+        raise ValueError("the image is too small")
     boxes = [(0, 0, width, height)] + [(i * width // 3, 0, (i + 1) * width // 3, height) for i in range(3)]
     records = []
     for region, box in zip(REGIONS, boxes):

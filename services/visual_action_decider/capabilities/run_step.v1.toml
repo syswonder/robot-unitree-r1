@@ -3,6 +3,6 @@ id = "robonix/service/visual_action/run_step"
 version = "1"
 kind = "service"
 idl = "visual_action/srv/RunStep.srv"
-description = "获取新画面并执行至多一个已经通过验收的动作，快速返回 run_id；使用 status 查询结果，使用 cancel 取消。"
+description = "Takes a new image and runs at most one accepted action, then returns run_id quickly. Use status to read the result and cancel to cancel it."
 [mode]
 type = "rpc"

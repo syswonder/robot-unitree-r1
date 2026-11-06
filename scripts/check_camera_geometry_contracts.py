@@ -6,7 +6,7 @@ import sys
 
 def main():
     root = Path(__file__).resolve().parents[1]
-    parser = argparse.ArgumentParser(description="通过真实 Atlas/gRPC 检查相机几何能力，不采集图像或发送运动")
+    parser = argparse.ArgumentParser(description="Check camera geometry capabilities through the live Atlas/gRPC registry, without capturing images or sending motion")
     parser.add_argument("--provider", action="append")
     parser.add_argument("--expect-unconfigured", action="store_true")
     parser.add_argument("--output", type=Path)
@@ -23,11 +23,11 @@ def main():
     for provider_id in args.provider or ["r1_camera", "r1_depth"]:
         providers = ATLAS.query_primitives(id=provider_id)
         if len(providers) != 1:
-            raise RuntimeError(f"提供方不存在或数量不正确：{provider_id}")
+            raise RuntimeError(f"provider is missing or the count is wrong: {provider_id}")
         contracts = {capability.contract_id for capability in providers[0].capabilities}
         required = {"robonix/primitive/camera/intrinsics", "robonix/primitive/camera/extrinsics"}
         if not required <= contracts:
-            raise RuntimeError(f"几何能力未完整注册：{provider_id}")
+            raise RuntimeError(f"geometry capabilities are not fully registered: {provider_id}")
         record = {"provider": provider_id, "state": providers[0].state.name, "contracts": sorted(contracts)}
         with ATLAS.connect_capability(consumer_id="r1-geometry-check", provider_id=provider_id,
                                       contract_id="robonix/primitive/camera/extrinsics", transport="grpc") as connection:
@@ -44,7 +44,7 @@ def main():
                 finally:
                     stream.cancel()
         if args.expect_unconfigured and record["extrinsics_available"]:
-            raise RuntimeError(f"预期未配置外参，但收到了值：{provider_id}")
+            raise RuntimeError(f"extrinsics were expected to be unconfigured, but a value was returned: {provider_id}")
         records.append(record)
     result = {"providers": records, "motion_requested": False, "images_requested": False}
     if args.output is not None:

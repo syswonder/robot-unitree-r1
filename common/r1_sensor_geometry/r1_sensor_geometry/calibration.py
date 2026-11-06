@@ -7,18 +7,18 @@ import yaml
 
 def positive_integer(value, name):
     if type(value) is not int or value <= 0:
-        raise ValueError(f"{name} 必须为正整数")
+        raise ValueError(f"{name} must be a positive integer")
     return value
 
 
 def vector(values, count, name):
     if not isinstance(values, list) or len(values) != count:
-        raise ValueError(f"{name} 必须包含 {count} 个数值")
+        raise ValueError(f"{name} must contain {count} numbers")
     if any(type(value) not in (int, float) for value in values):
-        raise ValueError(f"{name} 只能包含数值")
+        raise ValueError(f"{name} must contain only numbers")
     result = np.asarray(values, dtype=float)
     if not np.isfinite(result).all():
-        raise ValueError(f"{name} 包含非有限数值")
+        raise ValueError(f"{name} contains a non-finite value")
     return result
 
 
@@ -26,13 +26,13 @@ def matrix(document, name, rows, cols):
     value = document[name]
     if (not isinstance(value, dict) or type(value.get("rows")) is not int or type(value.get("cols")) is not int
             or value["rows"] != rows or value["cols"] != cols):
-        raise ValueError(f"{name} 的 rows/cols 必须为 {rows}/{cols}")
+        raise ValueError(f"{name} rows/cols must be {rows}/{cols}")
     return vector(value["data"], rows * cols, name).reshape(rows, cols)
 
 
 def frame_name(value, name):
     if not isinstance(value, str) or not value or value != value.strip() or any(character.isspace() for character in value):
-        raise ValueError(f"{name} 必须为不包含空白的 frame 名称")
+        raise ValueError(f"{name} must be a frame name without whitespace")
     return value
 
 
@@ -50,34 +50,34 @@ class CameraCalibration:
     def from_file(cls, path):
         document = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
         if not isinstance(document, dict):
-            raise ValueError("相机标定必须为 ROS camera_info YAML 映射")
+            raise ValueError("camera calibration must be a ROS camera_info YAML mapping")
         width = positive_integer(document["image_width"], "image_width")
         height = positive_integer(document["image_height"], "image_height")
         model = document["distortion_model"]
         counts = {"plumb_bob": (4, 5), "rational_polynomial": (8,), "equidistant": (4,)}
         if model not in counts:
-            raise ValueError("不支持的 distortion_model")
+            raise ValueError("unsupported distortion_model")
         coefficients = document["distortion_coefficients"]
         if not isinstance(coefficients, dict) or type(coefficients.get("cols")) is not int:
-            raise ValueError("distortion_coefficients 缺少矩阵尺寸")
+            raise ValueError("distortion_coefficients is missing its matrix size")
         count = coefficients["cols"]
         if count not in counts[model]:
-            raise ValueError("畸变系数数量与 distortion_model 不一致")
+            raise ValueError("the distortion coefficient count does not match distortion_model")
         d = matrix(document, "distortion_coefficients", 1, count).ravel()
         k = matrix(document, "camera_matrix", 3, 3)
         r = matrix(document, "rectification_matrix", 3, 3)
         p = matrix(document, "projection_matrix", 3, 4)
         if k[0, 0] <= 0 or k[1, 1] <= 0 or p[0, 0] <= 0 or p[1, 1] <= 0:
-            raise ValueError("K/P 的焦距必须为正数")
+            raise ValueError("K/P focal lengths must be positive")
         if not np.allclose(k[2], [0, 0, 1], atol=1e-8, rtol=0) or not np.allclose(p[2], [0, 0, 1, 0], atol=1e-8, rtol=0):
-            raise ValueError("K/P 的最后一行不符合针孔相机模型")
+            raise ValueError("the last row of K/P does not match the pinhole camera model")
         if not np.allclose(r.T @ r, np.eye(3), atol=1e-5, rtol=0) or not np.isclose(np.linalg.det(r), 1, atol=1e-5, rtol=0):
-            raise ValueError("rectification_matrix 必须为旋转矩阵")
+            raise ValueError("rectification_matrix must be a rotation matrix")
         return cls(width, height, model, tuple(d), tuple(k.ravel()), tuple(r.ravel()), tuple(p.ravel()))
 
     def check_size(self, width, height):
         if (width, height) != (self.width, self.height):
-            raise ValueError("标定尺寸与当前输出图像不一致；需要对应旋转、裁剪及分辨率的标定")
+            raise ValueError("calibration size does not match the current output image; use a calibration for this rotation, crop and resolution")
 
 
 @dataclass(frozen=True)
@@ -91,16 +91,16 @@ class CameraMount:
     def from_file(cls, path, expected_child):
         document = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
         if not isinstance(document, dict):
-            raise ValueError("相机外参必须为 TransformStamped YAML 映射")
+            raise ValueError("camera extrinsics must be a TransformStamped YAML mapping")
         parent = frame_name(document["header"]["frame_id"], "header.frame_id")
         child = frame_name(document["child_frame_id"], "child_frame_id")
         if parent == child or child != expected_child:
-            raise ValueError("外参 child_frame_id 必须与输出光学 frame 相同，且不同于 parent")
+            raise ValueError("extrinsic child_frame_id must equal the output optical frame and differ from the parent")
         transform = document["transform"]
         translation = vector([transform["translation"][axis] for axis in ("x", "y", "z")], 3, "translation")
         quaternion = vector([transform["rotation"][axis] for axis in ("x", "y", "z", "w")], 4, "rotation")
         if not np.isclose(np.linalg.norm(quaternion), 1, atol=1e-6, rtol=0):
-            raise ValueError("外参四元数必须归一化，顺序为 x,y,z,w")
+            raise ValueError("the extrinsic quaternion must be normalized, in x,y,z,w order")
         return cls(parent, child, tuple(translation), tuple(quaternion))
 
     def message(self):
@@ -122,7 +122,7 @@ def camera_info(calibration, width, height, frame_id, stamp_ns):
     positive_integer(height, "height")
     frame_name(frame_id, "frame_id")
     if type(stamp_ns) is not int or stamp_ns < 0:
-        raise ValueError("图像时间戳必须为非负整数纳秒")
+        raise ValueError("the image stamp must be a non-negative integer number of nanoseconds")
     message = sensor_msgs_pb2.CameraInfo(width=width, height=height)
     message.header.frame_id = frame_id
     message.header.stamp.sec = stamp_ns // 1_000_000_000
@@ -144,7 +144,7 @@ def camera_info(calibration, width, height, frame_id, stamp_ns):
 def load_geometry(config, deployment_root, frame_id, width=None, height=None):
     frame_name(frame_id, "frame_id")
     if (width is None) != (height is None):
-        raise ValueError("width 和 height 必须同时提供")
+        raise ValueError("width and height must be provided together")
     if width is not None:
         positive_integer(width, "width")
         positive_integer(height, "height")
@@ -152,7 +152,7 @@ def load_geometry(config, deployment_root, frame_id, width=None, height=None):
     def resolve(name):
         raw = config.get(name, "")
         if not isinstance(raw, str):
-            raise ValueError(f"{name} 必须为路径字符串")
+            raise ValueError(f"{name} must be a path string")
         if not raw:
             return None
         path = Path(raw)

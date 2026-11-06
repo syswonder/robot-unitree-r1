@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# R1 部署环境。在本仓库脚本里 source，启动前导出 ROBONIX_DEPLOY_DIR。
+# R1 deployment environment. Source this from scripts in this repository. It exports ROBONIX_DEPLOY_DIR before boot.
 set -euo pipefail
 
 _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

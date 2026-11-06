@@ -1,38 +1,19 @@
-# R1 腕部位姿接口
+# R1 wrist pose interface
 
-同一软件包通过 `side` 配置注册 `r1_left_arm` 和 `r1_right_arm`。
-各实例提供标准 gRPC `arm/end_pose` 与 `arm/pos_command`，消息为
-`geometry_msgs/Pose`。位置单位米，姿态为 x,y,z,w 归一化四元数。
-两条接口均以 `waist_yaw_link` 为参考坐标系；末端分别是官方 URDF 的
-`left_wrist_roll_link` 和 `right_wrist_roll_link`，对应腕部连接，不含工具安装变换。
+One package registers `r1_left_arm` and `r1_right_arm` through the `side` setting. Each instance serves standard gRPC `arm/end_pose` and `arm/pos_command` with `geometry_msgs/Pose`. Position is in metres. Orientation is a normalized x,y,z,w quaternion. Both interfaces use `waist_yaw_link` as the reference frame. The tips are the official URDF links `left_wrist_roll_link` and `right_wrist_roll_link`, the wrist joints, with no tool mount.
 
-`end_pose` 订阅 `r1_arm/joint_states`，通过 IKPy 计算正运动学。
-`pos_command` 使用 IKPy 和官方 URDF 求解完整位姿，关节角度遵循
-URDF 限位。R1 每臂五个自由度；求解后的位置残差必须不超过 0.0001 m、
-姿态残差不超过 0.001 rad，否则拒绝发送运动指令。
-这些数值是模型求解的收敛判据；实际关节到位判据由 `r1_arm` 检查，
-每关节绝对误差不超过 0.02 rad，不能解释为末端实际定位精度。
+`end_pose` subscribes to `r1_arm/joint_states` and computes forward kinematics with IKPy. `pos_command` solves a full pose with IKPy and the official URDF, inside the URDF joint limits. Each R1 arm has five degrees of freedom. The solved position residual must be at most 0.0001 m and the orientation residual at most 0.001 rad, or no motion command is sent. Those numbers are solver convergence limits. The joint settle check is in `r1_arm`: 0.02 rad absolute error per joint. They are not a measured end-effector accuracy.
 
-目标关节角度通过标准 `r1_arm/joint_command` 发送，由 `r1_arm`
-统一执行五次同步关节插值、速度前馈、FSM 检查和并发互斥。
-同一 `pos_command` 流共用一条关节指令流和一次接管、释放过程；
-后续 IK 目标使用前一个已求解目标作为求解起点。
-运动要求操作者通过官方遥控器或 App 进入 FSM 811（走跑运控）。
-末端路径不保证直线，也未提供碰撞规划。完成后释放控制权，内置控制器
-可能恢复姿态。`pos_command` 的关节速度由 `speed_rad_s` 配置，默认
-0.05 rad/s，URDF 速度限制仍由 `r1_arm` 检查。
+Target joint angles are sent on the standard `r1_arm/joint_command`. `r1_arm` runs the synchronized quintic interpolation, velocity feedforward, FSM check and mutual exclusion. One `pos_command` stream shares one joint-command stream and one take-over and release. Later IK targets start from the previous solved target. Motion requires the operator to select FSM 811 (walk-run) with the official remote or app. The tip path is not promised to be a straight line, and there is no collision planner. Control is released when the call finishes, and the built-in controller may restore the pose. The `pos_command` joint speed comes from `speed_rad_s`, default 0.05 rad/s. `r1_arm` still enforces the URDF speed limits.
 
-提供 MCP 和 gRPC 便利调用：
+Convenience calls over MCP and gRPC:
 
-- `get_end_pose`：返回 `frame_id`、`tip_link`、`position_m`、`quaternion_xyzw`。
-- `move_pose`：参数 `x,y,z,qx,qy,qz,qw,speed_rad_s`；位置、姿态为绝对目标。
+- `get_end_pose`: returns `frame_id`, `tip_link`, `position_m` and `quaternion_xyzw`.
+- `move_pose`: arguments `x,y,z,qx,qy,qz,qw,speed_rad_s`. Position and orientation are absolute targets.
 
-Client 指令示例：“调用 r1_right_arm 的 get_end_pose，报告右腕位姿。”
-运动指令必须明确 provider、参考坐标系、目标位置、完整姿态和关节速度。
-目标需要满足五自由度模型；不得根据文字猜测工具变换或当前位置。
-启动和读取均不发送运动指令，shutdown 关闭上游 gRPC 调用。
+A client example: "Call get_end_pose on r1_right_arm and report the right wrist pose." A motion request must name the provider, reference frame, target position, full orientation and joint speed. The target must be solvable by the five-degree-of-freedom model. Do not guess a tool transform or the current pose from the wording. Startup and reads send no motion command. Shutdown closes the upstream gRPC calls.
 
-在 R1 上构建：
+Build on the R1:
 
 ```bash
 source ~/r1-robonix/env.sh
@@ -40,7 +21,4 @@ cd ~/r1-robonix/robot-unitree-r1
 rbnx build -p primitives/r1_arm_pose --no-update-check
 ```
 
-依赖 IKPy 3.4.2、SciPy 1.15.3、NumPy 2.2.6 和 Robonix API。
-官方关节控制依据：
-[R1 ArmSdk 示例](https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/r1/high_level/r1_arm_sdk_dds_example.cpp)。
-末端运动学由此软件包基于官方 URDF 计算。
+Depends on IKPy 3.4.2, SciPy 1.15.3, NumPy 2.2.6 and the Robonix API. Official joint-control reference: [R1 ArmSdk example](https://github.com/unitreerobotics/unitree_sdk2/blob/main/example/r1/high_level/r1_arm_sdk_dds_example.cpp). This package computes the tip kinematics from the official URDF.

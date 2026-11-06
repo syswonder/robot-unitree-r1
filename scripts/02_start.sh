@@ -59,19 +59,19 @@ start_map() {
 
 start_robot_reboot_watch() {
   if pgrep -f '[/]watch_robot_reboot.py --interface eth10' >/dev/null 2>&1; then
-    echo "[start] 机器人重启联动已运行"
+    echo "[start] robot reboot watch is already running"
     return
   fi
   local python="$DEPLOY/primitives/r1_state/.venv/bin/python"
   if [[ ! -x "$python" ]]; then
-    echo "[start] 机器人重启联动缺少 r1_state Python 环境" >&2
+    echo "[start] robot reboot watch is missing the r1_state Python environment" >&2
     exit 1
   fi
   setsid nohup "$python" "$HERE/watch_robot_reboot.py" --interface eth10 \
     --run-dir "$RUN_DIR" --log-dir "$LOGS" \
     >> "$LOGS/robot-reboot-watch.log" 2>&1 < /dev/null &
   echo $! > "$RUN_DIR/robot-reboot-watch.pid"
-  echo "[start] 机器人重启联动"
+  echo "[start] robot reboot watch"
 }
 
 start_stack() {
@@ -120,7 +120,7 @@ fi
 if ! timeout 2 bash -c '</dev/tcp/192.168.123.161/5000' 2>/dev/null; then
   echo "[start] WARN: depth server 192.168.123.161:5000 is CLOSED" >&2
   echo "        enable Stereo patch PC1 in the Unitree App (keep video_hub off);" >&2
-  echo "        机器人重新上线时将自动重启深度接收进程" >&2
+  echo "        the depth receiver restarts automatically when the robot comes back" >&2
 fi
 
 echo "[start] waiting for stack and providers..."

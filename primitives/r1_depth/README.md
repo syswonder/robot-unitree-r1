@@ -1,36 +1,16 @@
-# R1 深度标准接口
+# R1 depth interfaces
 
-`robonix/primitive/camera/depth` 以 gRPC 输出标准 `sensor_msgs/Image`，
-编码为小端 `32FC1`，单位米；原始 0 和 65535 表示无效测量，输出 NaN。
-step 为图像宽度乘 4。时间戳为 R1 主机读取设备帧的时间，同一订阅者
-只接收新帧。默认光学 frame 为 `r1_depth_camera_optical_frame`。
-该接口保留有效度量深度，不受灰度快照显示范围限制。
+`robonix/primitive/camera/depth` streams a standard `sensor_msgs/Image` over gRPC, little-endian `32FC1`, in metres. Raw values 0 and 65535 are invalid measurements and become NaN. Step is the width times 4. The stamp is the time the R1 host read the device frame. A subscriber receives only new frames. The default optical frame is `r1_depth_camera_optical_frame`. The stream keeps every valid metric depth. It is not clipped to the grayscale snapshot display range.
 
-图像来自官方深度设备，默认按当前 R1 的大端 uint16 毫米格式读取；
-不同深度客户端版本可通过 `byte_order` 显式选择 little 或 big。
-RGB-D 配准、时间同步和相机安装 TF 尚未完成。完整配置见 `config.spec`。
+Images come from the official depth device. The current R1 client is read as big-endian uint16 millimetres. Another client version can select `byte_order` `little` or `big`. RGB-D registration, time sync and the camera mount TF are not done. The full settings are in `config.spec`.
 
-`camera/intrinsics` 输出当前深度成像网格的 `sensor_msgs/CameraInfo`，
-光学 frame 和时间戳对应有效深度帧。`calibration_file` 为独立的 ROS
-camera_info YAML，尺寸必须等于深度输出尺寸。缺少配置时 K/R/P 为零，
-表示未标定；读取真实标定后仍需完成 RGB-D 配准。
+`camera/intrinsics` publishes `sensor_msgs/CameraInfo` for the current depth image grid. The optical frame and stamp follow the valid depth frame. `calibration_file` is a separate ROS camera_info YAML whose size must equal the depth output. Without it, K/R/P are zero, which means uncalibrated. A real calibration still needs RGB-D registration.
 
-`camera/extrinsics` 输出静态 `TransformStamped`。`extrinsics_file` 的
-child 必须等于深度 `frame_id`；缺少实测外参时返回
-`FAILED_PRECONDITION`。两个接口与 RGB 共用 `r1_sensor_geometry` 的严格校验，
-字段和检查入口见
-[传感器几何配置](/home/xiongyingjie/Projects/go2-w-r1-robonix/robot-unitree-r1/common/r1_sensor_geometry/README.md)。
+`camera/extrinsics` publishes a static `TransformStamped`. The `extrinsics_file` child must equal the depth `frame_id`. Without a measured extrinsic the call returns `FAILED_PRECONDITION`. Both interfaces share the strict checks in `r1_sensor_geometry`. Fields and the local check are in [sensor geometry](../../common/r1_sensor_geometry/README.md).
 
-Read-only Unitree R1 binocular depth snapshot provider. It reads the latest
-544x448 Y16 frame from `/dev/video-dep` (the v4l2loopback device fed by
-Unitree's `depth_client`) and exposes `robonix/primitive/camera/depth_snapshot`
-as an MCP tool. The file is read as big-endian uint16 millimetres (the stereo
-module's network byte order); decoding it as native little-endian gives
-implausible 1-90 mm values. The returned image is an 8-bit grayscale PNG;
-near objects are bright, pixels outside the configured display range are black.
+The read-only snapshot provider reads the latest 544x448 Y16 frame from `/dev/video-dep` (the v4l2loopback device fed by Unitree's `depth_client`) and exposes `robonix/primitive/camera/depth_snapshot` as an MCP tool. The file is read as big-endian uint16 millimetres (the stereo module's network byte order). Decoding it as native little-endian gives implausible 1-90 mm values. The returned image is an 8-bit grayscale PNG. Near objects are bright. Pixels outside the configured display range are black.
 
-缺少或过期数据时，标准流返回 `UNAVAILABLE`。图像编码使用 Pillow；
-提供方关闭后，读取线程停止并关闭自己持有的设备描述符。
+Missing or stale data makes the standard stream return `UNAVAILABLE`. Pillow encodes the snapshot. After shutdown, the reader thread stops and closes the device descriptor it owns.
 
 ## Enable the depth stream
 

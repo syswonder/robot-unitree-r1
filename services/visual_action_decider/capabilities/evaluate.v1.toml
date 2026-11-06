@@ -3,6 +3,6 @@ id = "robonix/service/visual_action/evaluate"
 version = "1"
 kind = "service"
 idl = "visual_action/srv/Evaluate.srv"
-description = "读取当前 R1 图片或已归档样本，比较 direct_image 与 visual_text 的动作选择；本接口不执行运动。"
+description = "Reads the current R1 image or an archived sample and compares direct_image and visual_text action choices. This call does not move the robot."
 [mode]
 type = "rpc"

@@ -1,17 +1,9 @@
-# R1 IMU 标准接口
+# R1 IMU interface
 
-订阅官方 `rt/lowstate` 的 `unitree_hg/LowState_`，将 `imu_state` 映射为
-`robonix/primitive/imu/imu` 的 gRPC `sensor_msgs/Imu` 流。
-`quaternion` 按 w,x,y,z 转换，角速度为 rad/s，加速度为 m/s²，保留设备重力分量。
-设备没有提供协方差，三个协方差数组按 ROS 约定填零表示未知。
+Subscribes to official `rt/lowstate` `unitree_hg/LowState_` and maps `imu_state` to a gRPC `sensor_msgs/Imu` stream on `robonix/primitive/imu/imu`. `quaternion` is converted from w,x,y,z. Angular velocity is rad/s and linear acceleration is m/s^2, including the device gravity component. The device does not provide covariance, so the three covariance arrays are zero, which is the ROS convention for unknown.
 
-消息时间戳为 R1 主机接收 DDS 样本的时间，frame 为官方 URDF 的
-`imu_in_pelvis_link`。每个订阅者只接收新样本，慢消费者使用最新样本；
-缺少数据或超时返回 `UNAVAILABLE`，关闭时停止订阅。接口只读取设备。
+The stamp is the time the R1 host received the DDS sample. The frame is the official URDF frame `imu_in_pelvis_link`. Each subscriber receives only new samples. A slow consumer gets the latest sample. Missing or timed-out data returns `UNAVAILABLE`. Shutdown stops the subscription. The interface only reads the device.
 
-从部署目录执行 `rbnx build -p primitives/r1_imu`；整机清单配置
-`network_interface: eth10`，由构建和启动脚本统一管理。
-公开配置见 `config.spec`。
+Build from the deployment directory with `rbnx build -p primitives/r1_imu`. The full manifest sets `network_interface: eth10`. The build and start scripts manage the process. Public settings are in `config.spec`.
 
-来源：[宇树 R1 开发指南](https://support.unitree.com/home/zh/R1_developer)、
-[官方 IMU 消息定义](https://github.com/unitreerobotics/unitree_ros2/blob/master/cyclonedds_ws/src/unitree/unitree_hg/msg/IMUState.msg)。
+Sources: [Unitree R1 developer guide](https://support.unitree.com/home/zh/R1_developer), [official IMU message](https://github.com/unitreerobotics/unitree_ros2/blob/master/cyclonedds_ws/src/unitree/unitree_hg/msg/IMUState.msg).

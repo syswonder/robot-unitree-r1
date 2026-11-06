@@ -18,7 +18,7 @@ MODELS = Path(__file__).resolve().parents[1] / 'rbnx-build/models'
 def threads():
     count = int(os.environ.get('R1_SPEECH_THREADS', '4'))
     if count <= 0:
-        raise ValueError('R1_SPEECH_THREADS 必须为正整数')
+        raise ValueError('R1_SPEECH_THREADS must be a positive integer')
     return count
 
 
@@ -51,7 +51,7 @@ class SherpaASRBackend:
 
     def recognize_stream(self, pcm_chunks):
         stream = self.recognizer.create_stream()
-        # 起始静音提供模型左侧上下文，保留紧接录音开始的首段语音。
+        # Leading silence gives the model its left context and keeps speech that starts with the recording.
         stream.accept_waveform(16000, np.zeros(4000, dtype=np.float32))
         previous = ''
         for pcm in pcm_chunks:
@@ -59,24 +59,24 @@ class SherpaASRBackend:
             stream.accept_waveform(16000, samples)
             text = self.decode(stream)
             if not text.startswith(previous):
-                raise RuntimeError('CTC 识别结果无法按增量文本输出')
+                raise RuntimeError('the CTC result cannot be emitted as incremental text')
             delta = text[len(previous):]
             previous = text
             if delta:
                 yield {'event_type': 0, 'text': delta, 'confidence': 0.0, 'is_final': False}
-        # 按 Sherpa 官方示例补充尾部静音，读取模型剩余输出。
+        # Append trailing silence as in the official Sherpa example so the model flushes its remaining output.
         stream.accept_waveform(16000, np.zeros(10560, dtype=np.float32))
         stream.input_finished()
         text = self.decode(stream)
         if not text.startswith(previous):
-            raise RuntimeError('CTC 结束结果无法按增量文本输出')
+            raise RuntimeError('the final CTC result cannot be emitted as incremental text')
         yield {'event_type': 1, 'text': text[len(previous):], 'confidence': 0.0, 'is_final': True}
 
     def recognize(self, audio_bytes, encoding, sample_rate, language):
         if encoding != 'pcm_s16le' or sample_rate != 16000:
-            raise ValueError('ASR 输入必须为 16 kHz 单声道 pcm_s16le')
+            raise ValueError('ASR input must be 16 kHz mono pcm_s16le')
         if language and not language.lower().startswith('zh'):
-            raise ValueError('当前 ASR 模型支持中文')
+            raise ValueError('the current ASR model supports Chinese')
         events = self.recognize_stream([audio_bytes])
         return {'text': ''.join(event['text'] for event in events), 'confidence': 0.0}
 
@@ -93,23 +93,23 @@ class SherpaTTSBackend:
             rule_fsts=','.join(required(directory, name) for name in ('phone.fst', 'date.fst', 'number.fst')),
             max_num_sentences=1)
         if not config.validate():
-            raise ValueError('TTS 模型配置无效')
+            raise ValueError('the TTS model configuration is invalid')
         self.model = sherpa_onnx.OfflineTts(config)
         self.lock = threading.Lock()
 
     def generate(self, text, voice, speed):
         if not text.strip() or voice not in ('', '0') or not math.isfinite(speed) or speed <= 0:
-            raise TTSInputError('需要非空文本、voice 0 和有限正数 speed')
+            raise TTSInputError('text must be non-empty, voice must be 0, and speed must be a finite positive number')
         with self.lock:
             if not tts_request_is_active():
-                raise RuntimeError('语音合成已取消')
+                raise RuntimeError('speech synthesis was cancelled')
             audio = self.model.generate(text, sid=0, speed=speed,
                 callback=lambda samples, progress: int(tts_request_is_active()))
         if not tts_request_is_active():
-            raise RuntimeError('语音合成已取消')
+            raise RuntimeError('speech synthesis was cancelled')
         samples = np.asarray(audio.samples, dtype=np.float32)
         if not samples.size:
-            raise RuntimeError('TTS 没有生成音频')
+            raise RuntimeError('TTS produced no audio')
         divisor = math.gcd(audio.sample_rate, 16000)
         samples = resample_poly(samples, 16000 // divisor, audio.sample_rate // divisor)
         return (np.clip(samples, -1.0, 1.0) * 32767).astype('<i2').tobytes()
@@ -121,5 +121,5 @@ class SherpaTTSBackend:
         pcm = await self.synthesize(text, voice, speed)
         for offset in range(0, len(pcm), 32000):
             if not tts_request_is_active():
-                raise RuntimeError('语音合成已取消')
+                raise RuntimeError('speech synthesis was cancelled')
             yield pcm[offset:offset + 32000]

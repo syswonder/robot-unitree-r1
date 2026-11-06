@@ -18,9 +18,9 @@ controller = None
 
 @provider.mcp("robonix/primitive/chassis/move")
 def move_mcp(request: ExecuteMoveCommand_Request) -> ExecuteMoveCommand_Response:
-    """执行 R1 官方限时移动。已验证前进 linear_x=0.3、后退 linear_x=-0.4，duration_sec=5；需要 FSM 811。返回实际关节变化和原始 SDK 返回码；距离为开环近似量。"""
+    """Run one official timed R1 move. Forward linear_x=0.3 and backward linear_x=-0.4 for duration_sec=5 have been checked. Requires FSM 811. Returns the measured joint change and the raw SDK code. Distance is an open-loop approximation."""
     if controller is None:
-        raise RuntimeError("行走原语尚未初始化")
+        raise RuntimeError("the walking primitive is not initialized")
     result = controller.move(request.command, lambda: True)
     return ExecuteMoveCommand_Response(status=String(data=json.dumps(result, ensure_ascii=False)))
 
@@ -28,7 +28,7 @@ def move_mcp(request: ExecuteMoveCommand_Request) -> ExecuteMoveCommand_Response
 @provider.grpc("robonix/primitive/chassis/move")
 def move(request, context):
     if controller is None:
-        context.abort(grpc.StatusCode.FAILED_PRECONDITION, "行走原语尚未初始化")
+        context.abort(grpc.StatusCode.FAILED_PRECONDITION, "the walking primitive is not initialized")
     try:
         result = controller.move(request.command, context.is_active)
     except ValueError as error:
@@ -42,7 +42,7 @@ def move(request, context):
 @provider.grpc("robonix/primitive/chassis/twist_in")
 def twist_in(requests, context):
     if controller is None:
-        context.abort(grpc.StatusCode.FAILED_PRECONDITION, "行走原语尚未初始化")
+        context.abort(grpc.StatusCode.FAILED_PRECONDITION, "the walking primitive is not initialized")
     try:
         controller.twist(requests, context.is_active)
     except ValueError as error:
